@@ -318,6 +318,74 @@
     </div>
   </div>
 </section>
+
+@if(isset($latestNews) && $latestNews->count())
+<section class="section news-home">
+  <div class="container">
+    <header class="section-head">
+      <h2 class="section-title green">Senaste nytt</h2>
+      <p class="muted">De senaste uppdateringarna från moskén</p>
+    </header>
+
+    <div class="news-grid">
+      @foreach($latestNews as $item)
+        <article class="news-card">
+          <a href="{{ route('nyheter.show', $item->slug) }}" class="news-thumb">
+            @if($item->image_path)
+              <img src="{{ Storage::url($item->image_path) }}" alt="{{ $item->title }}">
+            @endif
+          </a>
+
+          <div class="news-body">
+            <h3 class="news-title">
+              <a href="{{ route('nyheter.show', $item->slug) }}">{{ $item->title }}</a>
+            </h3>
+
+            @if($item->excerpt)
+              <p class="news-excerpt">{{ $item->excerpt }}</p>
+            @endif
+
+            <p class="news-more">
+              <a href="{{ route('nyheter.show', $item->slug) }}" class="btn-link">Läs mer »</a>
+            </p>
+          </div>
+
+          <div class="news-meta">
+            @if($item->published_at)
+              <span>{{ $item->published_at->format('Y-m-d') }}</span>
+              <span>•</span>
+              <span>{{ $item->published_at->format('H:i:s') }}</span>
+            @endif
+          </div>
+        </article>
+      @endforeach
+    </div>
+
+    <p class="text-center" style="margin-top:20px">
+      <a class="btn btn-orange" href="{{ route('nyheter.index') }}">Visa alla nyheter</a>
+    </p>
+  </div>
+</section>
+@endif
+
+@push('styles')
+<style>
+/* نفس ستايل شبكة 3 بطاقات اللي استعملناه في صفحة nyheter */
+.news-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+@media(max-width:1100px){ .news-grid{ grid-template-columns:repeat(2,1fr);} }
+@media(max-width:700px){ .news-grid{ grid-template-columns:1fr;} }
+
+.news-card{ background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.06); overflow:hidden; display:flex; flex-direction:column; }
+.news-thumb img{ width:100%; height:220px; object-fit:cover; display:block; }
+.news-body{ padding:20px; }
+.news-title{ font-size:28px; margin:0 0 8px; }
+.news-excerpt{ color:#555; line-height:1.6; }
+.news-more{ margin-top:12px; }
+.news-meta{ padding:14px 20px; color:#888; font-size:14px; border-top:1px solid #eee; margin-top:auto; }
+</style>
+@endpush
+
+
 @endif
 {{-- ===== CTA (من الأدمن) ===== --}}
 @php

@@ -1,72 +1,70 @@
-@extends('layouts.app')
+<?php $__env->startSection('title','Nyheter — Haninge Islamiska Forum'); ?>
 
-@section('title','Nyheter — Haninge Islamiska Forum')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 
 <!-- ===== Banner ===== -->
-<section class="page-banner" style="background-image:url('{{ asset('assets/img/om-islam-banner.jpg') }}')">
+<section class="page-banner" style="background-image:url('<?php echo e(asset('assets/img/om-islam-banner.jpg')); ?>')">
   <div class="overlay"></div>
   <div class="container banner-inner">
     <h1>Viktig Påminnelse inför Eid-bönen</h1>
   </div>
-</section>@extends('layouts.app')
+</section>
 
-@section('title', $pageTitle ?? 'Nyheter')
-@section('meta_description', $pageDescription ?? '')
+<?php $__env->startSection('title', $pageTitle ?? 'Nyheter'); ?>
+<?php $__env->startSection('meta_description', $pageDescription ?? ''); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 
-  {{-- Banner --}}
-  <section class="page-banner" style="background-image:url('{{ $banner?->banner_path ? Storage::url($banner->banner_path) : '/assets/img/nyheter-banner.jpg' }}')">
+  
+  <section class="page-banner" style="background-image:url('<?php echo e($banner?->banner_path ? Storage::url($banner->banner_path) : '/assets/img/nyheter-banner.jpg'); ?>')">
     <div class="overlay"></div>
     <div class="container banner-inner">
-      <h1>{{ $banner?->title ?: 'Nyheter' }}</h1>
-      @if($banner?->subtitle)
-        <p>{{ $banner->subtitle }}</p>
-      @endif
+      <h1><?php echo e($banner?->title ?: 'Nyheter'); ?></h1>
+      <?php if($banner?->subtitle): ?>
+        <p><?php echo e($banner->subtitle); ?></p>
+      <?php endif; ?>
     </div>
   </section>
 
-  {{-- Grid 3 بطاقات --}}
+  
   <main class="site-main">
     <section class="section">
       <div class="container">
         <div class="news-grid">
-          @forelse($nyheter as $item)
+          <?php $__empty_1 = true; $__currentLoopData = $nyheter; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
             <article class="news-card">
-              <a href="{{ route('nyheter.show', $item->slug) }}" class="news-thumb">
-                @if($item->image_path)
-                  <img src="{{ Storage::url($item->image_path) }}" alt="{{ $item->title }}">
-                @endif
+              <a href="<?php echo e(route('nyheter.show', $item->slug)); ?>" class="news-thumb">
+                <?php if($item->image_path): ?>
+                  <img src="<?php echo e(Storage::url($item->image_path)); ?>" alt="<?php echo e($item->title); ?>">
+                <?php endif; ?>
               </a>
               <div class="news-body">
                 <h3 class="news-title">
-                  <a href="{{ route('nyheter.show', $item->slug) }}">{{ $item->title }}</a>
+                  <a href="<?php echo e(route('nyheter.show', $item->slug)); ?>"><?php echo e($item->title); ?></a>
                 </h3>
-                @if($item->excerpt)
-                  <p class="news-excerpt">{{ $item->excerpt }}</p>
-                @endif
+                <?php if($item->excerpt): ?>
+                  <p class="news-excerpt"><?php echo e($item->excerpt); ?></p>
+                <?php endif; ?>
                 <p class="news-more">
-                  <a href="{{ route('nyheter.show', $item->slug) }}" class="btn-link">Läs mer »</a>
+                  <a href="<?php echo e(route('nyheter.show', $item->slug)); ?>" class="btn-link">Läs mer »</a>
                 </p>
               </div>
               <div class="news-meta">
-                <span>{{ optional($item->published_at)->format('Y-m-d') }}</span>
-                @if($item->published_at)<span>•</span><span>{{ $item->published_at->format('H:i:s') }}</span>@endif
+                <span><?php echo e(optional($item->published_at)->format('Y-m-d')); ?></span>
+                <?php if($item->published_at): ?><span>•</span><span><?php echo e($item->published_at->format('H:i:s')); ?></span><?php endif; ?>
               </div>
             </article>
-          @empty
+          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <p class="text-center text-gray-500">Inga nyheter ännu.</p>
-          @endforelse
+          <?php endif; ?>
         </div>
       </div>
     </section>
   </main>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
 /* شبكة 3 أعمدة (Responsive) */
 .news-grid{
@@ -90,7 +88,7 @@
   padding:14px 20px; color:#888; font-size:14px; border-top:1px solid #eee; margin-top:auto;
 }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
 
 <main class="site-main">
@@ -180,4 +178,7 @@
   </section>
 </main>
 
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Admin\haninge\resources\views/pages/nyheter.blade.php ENDPATH**/ ?>
