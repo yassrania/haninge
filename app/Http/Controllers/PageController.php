@@ -120,7 +120,7 @@ class PageController extends Controller
     /**
      * /nyheter — صفحة ثابتة للأخبار/المدونة
      */
-   public function nyheterIndex(): \Illuminate\View\View
+   public function nyheter(): \Illuminate\View\View
 {
     $banner = NyheterSetting::first();
 
