@@ -11,6 +11,9 @@ class Service extends Model
     protected $casts = [
         'service_rows' => 'array',
         'published'    => 'boolean',
+        'blocks'       => 'array',
+        'form_fields'  => 'array',
+      
     ];
 
     // توليد slug بسيط إذا بغيتي تستعمله في السييد/الكنترولر

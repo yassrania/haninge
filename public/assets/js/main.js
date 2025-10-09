@@ -33,88 +33,175 @@ qsa('.has-submenu').forEach((li)=>{
     }
   });
   // ===== HERO VIDEO SLIDER (add to assets/js/main.js) =====
-(function(){
-  const slider = document.querySelector('.hero-slider');
-  if(!slider) return;
+// assets/js/main.js
 
-  const slides = Array.from(slider.querySelectorAll('.hero-slide'));
-  const videos = slides.map(s => s.querySelector('video'));
-  const dots = Array.from(document.querySelectorAll('.hero-dot'));
-  const btnPP = document.querySelector('.hero-playpause');
+// ===== Helpers =====
+const qs  = (s, c = document) => c.querySelector(s);
+const qsa = (s, c = document) => Array.from(c.querySelectorAll(s));
+
+// ===== Footer year =====
+const yearEl = qs('#year');
+if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+// ===== Mobile menu toggle =====
+const navToggle = qs('.nav-toggle');
+const menu = qs('.menu');
+
+if (navToggle && menu) {
+  navToggle.addEventListener('click', () => {
+    const open = menu.classList.toggle('open');
+    navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+}
+
+// ===== Desktop hover / Mobile click for submenu =====
+qsa('.has-submenu').forEach((li) => {
+  const toggle = qs('.submenu-toggle', li);
+  if (!toggle) return;
+
+  // Desktop hover/focus
+  li.addEventListener('mouseenter', () => {
+    if (window.innerWidth > 980) {
+      li.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+    }
+  });
+  li.addEventListener('mouseleave', () => {
+    if (window.innerWidth > 980) {
+      li.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // Mobile click
+  toggle.addEventListener('click', (e) => {
+    if (window.innerWidth <= 980) {
+      e.preventDefault();
+      const isOpen = li.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+  });
+}); // ← مهم: نغلق حلقة forEach قبل أي سكربت آخر
+
+// ===== HERO SLIDER (يدعم صور أو فيديو) =====
+(function () {
+  const slider = qs('.hero-slider');
+  if (!slider) return;
+
+  const slides = qsa('.hero-slide', slider);
+  if (slides.length === 0) return;
+
+  const dots   = qsa('.hero-controls .hero-dot');
+  const btnPP  = qs('.hero-controls .hero-playpause');
 
   let idx = 0;
-  let auto = true;
-  const DURATION = 6000; // ms
+  let autoPlay = slides.length > 1;
+  const INTERVAL = 6000;
   let timer = null;
 
-  // Helper: activate a slide
-  function goTo(i){
-    if(i === idx) return;
-    const prev = slides[idx];
-    const next = slides[i];
+  // ترجع عنصر <video> أو <img> داخل السلايد
+  const getMedia = (slide) =>
+    slide.querySelector('video') || slide.querySelector('img');
 
-    // pause prev video
-    const pv = videos[idx];
-    if(pv){ pv.pause(); pv.currentTime = 0; }
+  function activate(i) {
+    slides.forEach((el, k) => {
+      const active = k === i;
+      el.classList.toggle('is-active', active);
+      el.setAttribute('aria-hidden', active ? 'false' : 'true');
 
-    // swap classes/ARIA
-    prev.classList.remove('is-active'); prev.setAttribute('aria-hidden','true');
-    next.classList.add('is-active');    next.setAttribute('aria-hidden','false');
+      const v = el.querySelector('video');
+      if (v) {
+        if (active && autoPlay) {
+          const play = () => v.play().catch(() => {});
+          if (v.readyState < 2) {
+            v.addEventListener('loadeddata', play, { once: true });
+            v.load();
+          } else {
+            play();
+          }
+        } else {
+          v.pause();
+          v.currentTime = 0;
+        }
+      }
+    });
 
-    // update dots
-    dots[idx]?.classList.remove('is-active');
-    dots[i]?.classList.add('is-active');
-
+    dots.forEach((d, k) => d.classList.toggle('is-active', k === i));
     idx = i;
+  }
 
-    // play next video (autoplay muted)
-    const nv = videos[idx];
-    if(nv){
-      const play = () => nv.play().catch(()=>{ /* ignore autoplay block */ });
-      // ensure load for metadata-only
-      if(nv.readyState < 2){ nv.addEventListener('loadeddata', play, {once:true}); nv.load(); }
-      else play();
+  function next() {
+    activate((idx + 1) % slides.length);
+  }
+
+  function start() {
+    if (timer) clearInterval(timer);
+    if (!autoPlay || slides.length < 2) return;
+    timer = setInterval(next, INTERVAL);
+    if (btnPP) {
+      btnPP.dataset.state = 'playing';
+      btnPP.textContent = '❚❚';
+      btnPP.setAttribute('aria-label', 'Pausa animationen');
     }
   }
 
-  function next(){ goTo( (idx+1) % slides.length ); }
-
-  function start(){
-    if(timer) clearInterval(timer);
-    timer = setInterval(next, DURATION);
-    auto = true;
-    if(btnPP){ btnPP.dataset.state = 'playing'; btnPP.textContent = '❚❚'; btnPP.setAttribute('aria-label','Pausa animationen'); }
-  }
-  function stop(){
-    if(timer) clearInterval(timer);
+  function stop() {
+    if (timer) clearInterval(timer);
     timer = null;
-    auto = false;
-    if(btnPP){ btnPP.dataset.state = 'paused'; btnPP.textContent = '▶'; btnPP.setAttribute('aria-label','Spela upp animationen'); }
+    if (btnPP) {
+      btnPP.dataset.state = 'paused';
+      btnPP.textContent = '►';
+      btnPP.setAttribute('aria-label', 'Spela upp animationen');
+    }
   }
 
-  // Init: mark ARIA controls
-  slides.forEach((s,i)=>s.id = `hero-slide-${i}`);
-  dots.forEach(d=>{
-    d.addEventListener('click', ()=>{ stop(); goTo(parseInt(d.dataset.go,10)||0); });
-  });
-  btnPP?.addEventListener('click', ()=> (auto ? stop() : start()));
-
-  // Pause when not visible (tab hidden) & resume when visible
-  document.addEventListener('visibilitychange', ()=>{
-    if(document.hidden) stop(); else if(!auto) return; else start();
+  // dots
+  dots.forEach((d, k) => {
+    d.addEventListener('click', () => {
+      stop();
+      activate(k);
+    });
   });
 
-  // Reduce Motion: stop autoplay
-  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(prefersReduced) stop(); else start();
+  // play/pause
+  if (btnPP) {
+    btnPP.addEventListener('click', () => {
+      if (timer) stop(); else { autoPlay = true; start(); }
+    });
+  }
 
-  // Autoplay first video immediately
-  const first = videos[0];
-  if(first){
-    const playFirst = () => first.play().catch(()=>{});
-    if(first.readyState < 2){ first.addEventListener('loadeddata', playFirst, {once:true}); first.load(); }
-    else playFirst();
+  // إيقاف التشغيل عند تغيير التبويب
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop();
+    else if (autoPlay) start();
+  });
+
+  // مراعاة تقليل الحركة
+  const prefersReduced = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) {
+    autoPlay = false;
+    stop();
+  } else {
+    start();
+  }
+
+  // فعل أول سلايد
+  activate(0);
+
+  // لو أول سلايد فيديو، شغّلو فورًا
+  const firstMedia = getMedia(slides[0]);
+  if (firstMedia && firstMedia.tagName === 'VIDEO') {
+    const v = firstMedia;
+    const play = () => v.play().catch(() => {});
+    if (v.readyState < 2) {
+      v.addEventListener('loadeddata', play, { once: true });
+      v.load();
+    } else {
+      play();
+    }
   }
 })();
+
 
 });

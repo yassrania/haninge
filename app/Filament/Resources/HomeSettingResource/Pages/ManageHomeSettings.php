@@ -3,14 +3,18 @@
 namespace App\Filament\Resources\HomeSettingResource\Pages;
 
 use App\Filament\Resources\HomeSettingResource;
-use Filament\Resources\Pages\ManageRecords;
+use App\Models\HomeSetting;
+use Filament\Resources\Pages\Page;
 
-class ManageHomeSettings extends ManageRecords
+class ManageHomeSettings extends Page
 {
     protected static string $resource = HomeSettingResource::class;
 
-    protected function getHeaderActions(): array
+    protected static string $view = 'filament.pages.blank';
+
+    public function mount(): void
     {
-        return []; // سجل واحد فقط
+        $record = HomeSetting::firstOrCreate(['id' => 1], []);
+        $this->redirect(HomeSettingResource::getUrl('edit', ['record' => $record]));
     }
 }

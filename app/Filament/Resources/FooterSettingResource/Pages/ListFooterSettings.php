@@ -13,7 +13,14 @@ class ListFooterSettings extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            
         ];
+    }
+
+
+    public function mount(): void
+    {
+        $record = \App\Models\FooterSetting::firstOrCreate(['id' => 1], []);
+        $this->redirect(\App\Filament\Resources\FooterSettingResource::getUrl('edit', ['record' => $record]));
     }
 }

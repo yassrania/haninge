@@ -54,11 +54,16 @@ class FooterSettingResource extends Resource
     }
 
     public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListFooterSettings::route('/'),
-            'create' => Pages\CreateFooterSetting::route('/create'),
-            'edit' => Pages\EditFooterSetting::route('/{record}/edit'),
-        ];
-    }
+{
+    return [
+        'index' => Pages\ListFooterSettings::route('/'),
+        'edit'  => Pages\EditFooterSetting::route('/{record}/edit'),
+    ];
+}
+
+
+    public static function canCreate(): bool { return false; }
+    public static function canDelete($record): bool { return false; }
+    public static function canReplicate($record): bool { return false; }
+    public static function canForceDelete($record): bool { return false; }
 }

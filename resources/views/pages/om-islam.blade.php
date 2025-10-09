@@ -1,102 +1,148 @@
 @extends('layouts.app')
 
-@section('title','Om Islam — Haninge Islamiska Forum')
+@section('title', $pageTitle ?? 'Om Islam')
+@section('meta_description', $pageDescription ?? 'Haninge Islamiska Forum')
 
 @section('content')
 
-<!-- ===== Banner Om Islam ===== -->
-<section class="page-banner" style="background-image:url('{{ asset('assets/img/om-islam-banner.jpg') }}')">
-  <div class="overlay"></div>
-  <div class="container banner-inner">
-    <h1>Om Islam</h1>
-    <p>En introduktion</p>
-  </div>
-</section>
+  {{-- ===== Banner Om Islam ===== --}}
+  @php $banners = $sections->where('type', 'banner'); @endphp
+  @if($banners->count())
+      @php $b = $banners->first(); @endphp
+      <section class="page-banner" style="background-image:url('{{ $b->banner_path ? Storage::url($b->banner_path) : '/assets/img/om-islam-banner.jpg' }}')">
+        <div class="overlay"></div>
+        <div class="container banner-inner">
+          <h1>{{ $b->title ?: 'Om Islam' }}</h1>
+          @if($b->subtitle ?? false)
+            <p>{{ $b->subtitle }}</p>
+          @elseif($b->slug ?? false)
+            <p>{{ $b->slug }}</p>
+          @endif
+        </div>
+      </section>
+  @else
+      {{-- لو ما في بنر من الـCMS نعرض واحد افتراضي عشان نحافظ على نفس الستايل --}}
+      <section class="page-banner" style="background-image:url('/assets/img/om-islam-banner.jpg')">
+        <div class="overlay"></div>
+        <div class="container banner-inner">
+          <h1>Om Islam</h1>
+          <p>En introduktion</p>
+        </div>
+      </section>
+  @endif
 
-<main class="site-main">
+  <main class="site-main">
 
-  <!-- Den muslimska tron -->
+    @php
+      // بقية البلوكات غير البنر
+      $blocks = $sections->reject(fn($s) => $s->type === 'banner')->values();
+    @endphp
+
+    @forelse($blocks as $idx => $block)
+
+      {{-- ===== Image + Text (about-grid) بنفس تنسيق القالب الأصلي مع تبادل يمين/يسار تلقائي --}}
+    @if($block->type === 'image_text')
+  @php
+      $imageHtml = $block->image_path
+          ? '<img src="'.e(Storage::url($block->image_path)).'" alt="'.e($block->title).'" />'
+          : '';
+      $figureClass = 'frame';
+      $pos = ($block->image_position === 'right') ? 'right' : 'left';
+  @endphp
+
   <section class="section about-grid">
     <div class="container grid-2">
-      <figure class="frame">
-        <img src="{{ asset('assets/img/islam-1.jpg') }}" alt="Den muslimska tron">
-      </figure>
-      <div>
-        <h2 class="green">Den muslimska tron</h2>
-        <p>Text om muslimska tron...</p>
-      </div>
+
+      {{-- صورة يسار + نص يمين --}}
+      @if($pos === 'left')
+        <figure class="{{ $figureClass }}">{!! $imageHtml !!}</figure>
+        <div>
+          @if($block->title)
+            <h2 class="green">{{ $block->title }}</h2>
+          @endif
+
+          @if($block->subtitle)
+            <h6 class="orange">{{ $block->subtitle }}</h6>
+          @endif
+
+          @if($block->content)
+            {!! $block->content !!}
+          @endif
+
+          @if($block->button_url)
+            <p><a class="btn-link" href="{{ $block->button_url }}">{{ $block->button_label ?: 'Läs mer' }}</a></p>
+          @endif
+        </div>
+      @endif
+
+      {{-- نص يسار + صورة يمين --}}
+      @if($pos === 'right')
+        <div>
+          @if($block->title)
+            <h2 class="green">{{ $block->title }}</h2>
+          @endif
+
+          @if($block->subtitle)
+            <p>{{ $block->subtitle }}</p>
+          @endif
+
+          @if($block->content)
+            {!! $block->content !!}
+          @endif
+
+          @if($block->button_url)
+            <p><a class="btn-link" href="{{ $block->button_url }}">{{ $block->button_label ?: 'Läs mer' }}</a></p>
+          @endif
+        </div>
+        <figure class="{{ $figureClass }}">{!! $imageHtml !!}</figure>
+      @endif
+
     </div>
   </section>
 
-  <!-- Dykan i Islam -->
-  <section class="section about-grid">
+
+
+      {{-- ===== Text فقط: نفس بنية <section class="section"> --}}
+      @elseif($block->type === 'text')
+        @php
+          // لو حاب تعمل مقطع أخضر كامل مثل "section-green" في الأصلي:
+          // اكتب في Subtitle بالـCMS كلمة section-green (اختياري)
+          $isGreen = trim((string)($block->subtitle ?? '')) === 'section-green';
+        @endphp
+
+        @if($isGreen)
+          <section class="section about-grid">
     <div class="container grid-2">
-      <div>
-        <h2 class="green">Dykan i Islam</h2>
-        <p>Text om dykan...</p>
-      </div>
-      <figure class="frame">
-        <img src="{{ asset('assets/img/islam-2.jpg') }}" alt="Dykan i Islam">
-      </figure>
-    </div>
-  </section>
+              @if($block->title)<h2 class="white">{{ $block->title }}</h2>@endif
+              @if($block->content)
+                <div class="white">{!! $block->content !!}</div>
+              @endif
+              {{-- لو محتاج اقتباس بشكل خاص: ضع <blockquote class="islam-quote"> داخل محتوى الـCMS --}}
+            </div>
+          </section>
+        @else
+          <section class="section">
+            <div class="container">
+              @if($block->title)<h2 class="green">{{ $block->title }}</h2>@endif
+              @if($block->subtitle && $block->subtitle !== 'section-green')
+                <p>{{ $block->subtitle }}</p>
+              @endif
+              @if($block->content){!! $block->content !!}@endif
+            </div>
+          </section>
+        @endif
+      @endif
 
-  <!-- Om Profeten Mohammad -->
-  <section class="section section-green">
-    <div class="container text-center">
-      <h2 class="white">Om Profeten Mohammad</h2>
-      <p class="white">Kort presentation i två kolumner...</p>
-      <blockquote class="islam-quote">"Citat från Profeten" — Källa</blockquote>
-    </div>
-  </section>
+    @empty
+      {{-- لو ما في بلوكات نعرض Placeholder بسيط بنفس المسافات --}}
+      <section class="section">
+        <div class="container">
+          <h2 class="green">Om Islam</h2>
+          <p>Innehållet kommer snart.</p>
+        </div>
+      </section>
+    @endforelse
 
-  <!-- Vad tror muslimer? -->
-  <section class="section">
-    <div class="container">
-      <h2 class="green">Vad tror muslimer?</h2>
-      <p>Lång text ...</p>
-    </div>
-  </section>
-
-  <!-- Islamisk monoteism -->
-  <section class="section about-grid">
-    <div class="container grid-2">
-      <div>
-        <h2 class="green">Islamisk monoteism</h2>
-        <p>Text...</p>
-      </div>
-      <figure>
-        <img src="{{ asset('assets/img/islam-3.jpg') }}" alt="Islamisk monoteism">
-      </figure>
-    </div>
-  </section>
-
-  <!-- Vilka är muslimerna -->
-  <section class="section about-grid">
-    <div class="container grid-2">
-      <figure class="frame">
-        <img src="{{ asset('assets/img/islam-4.jpg') }}" alt="Vilka är muslimerna">
-      </figure>
-      <div>
-        <h2 class="green">Vilka är muslimerna</h2>
-        <p>Text...</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Islams referenskällor -->
-  <section class="section about-grid">
-    <div class="container grid-2">
-      <div>
-        <h2 class="green">Islams referenskällor</h2>
-        <p>Text...</p>
-      </div>
-      <figure>
-        <img src="{{ asset('assets/img/islam-5.jpg') }}" alt="Islams referenskällor">
-      </figure>
-    </div>
-  </section>
-
-</main>
+  </main>
 
 @endsection

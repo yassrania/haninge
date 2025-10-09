@@ -1,58 +1,113 @@
-@php
-    use App\Models\HomeSetting;
-    /** @var HomeSetting|null $home */
-    $home = HomeSetting::query()->first();
-
-    // تحويلات آمنة للمصفوفات
-    $slides   = (array) ($home->slides   ?? []);
-    $goals    = (array) ($home->goals    ?? []);
-    $pillars  = (array) ($home->pillars  ?? []);
-    $services = (array) ($home->services ?? []);
-
-    // عناوين ديناميكية + fallbacks
-    $introTitle  = $home->intro_title  ?: ($home->about_title ?? 'Alby moské');
-    $introAccent = $home->intro_accent ?: 'En moské i hjärtat av Botkyrka';
-$gBody = null;
-    foreach ($goals as $item) {
-        if (!empty($item['body'])) { $gBody = $item['body']; break; }
-    }
-
-    $gImage = $goals[0]['image'] ?? null; // الصورة الأولى فقط (بحسب تصميمك)
-    $goalsTitle  = $home->goals_title  ?? 'Vårt mål och syfte';
-    $goalsAccent = $home->goals_accent ?? 'Stärka tro, kunskap och gemenskap';
-@endphp
-    
-
 @extends('layouts.app')
-@section('title', 'Alby Moské — Välkommen')
+@section('title', 'Haninge Islamiska Forum — Välkommen')
 
 @section('content')
+@php
+    $home = \App\Models\HomeSetting::query()->first();
 
-{{-- ===== HERO (مجرّد عنوان فرعي هنا حسب قوالبك) ===== --}}
+    $slides   = is_array($home->slides ?? null) ? $home->slides : [];
+    $goals    = is_array($home->goals    ?? null) ? $home->goals    : [];
+    $pillars  = is_array($home->pillars  ?? null) ? $home->pillars  : [];
+    $services = is_array($home->services ?? null) ? $home->services : [];
+
+    $introTitle  = $home->intro_title  ?: ($home->about_title ?? 'Alby moské');
+    $introAccent = $home->intro_accent ?: 'En moské i hjärtat av Botkyrka';
+
+    $goalsTitle  = $home->goals_title  ?? 'Vårt mål och syfte';
+    $goalsAccent = $home->goals_accent ?? 'Stärka tro, kunskap och gemenskap';
+
+      $heroMode = $home->hero_mode ?? 'image_slider';
+
+@endphp
+
+{{-- ===== INTRO (هيدر صغير) ===== --}}
+@php
+  $heroMode = $home->hero_mode ?? 'image_slider';
+  $slides   = is_array($home->slides ?? null) ? $home->slides : [];
+@endphp
+
+{{-- ===== HERO ===== --}}
+@php
+  $heroMode = $home->hero_mode ?? 'image_slider';
+  $slides   = is_array($home->slides ?? null) ? $home->slides : [];
+@endphp
+
+{{-- ===== HERO ===== --}}
+@if($heroMode === 'single_image' && !empty($home?->hero_image))
 <section id="hero" class="hero">
-  <div class="container hero-inner">
-    <h1 class="hero-title">{{ $introTitle }}</h1>
-    <p class="hero-subtitle">{{ $introAccent }}</p>
+  <div class="hero-slider" aria-live="polite">
+    <figure class="hero-slide is-active" data-index="0" aria-hidden="false">
+      <img class="hero-img" src="{{ asset('storage/'.$home->hero_image) }}" alt="{{ $home->about_title ?? 'hero' }}">
+      @if(!empty($home->about_title) || !empty($home->intro_accent))
+        <figcaption class="hero-caption">
+          @if(!empty($home->about_title)) <h1>{{ $home->about_title }}</h1> @endif
+          @if(!empty($home->intro_accent)) <p>{{ $home->intro_accent }}</p> @endif
+        </figcaption>
+      @endif
+    </figure>
   </div>
 </section>
+@elseif(in_array($heroMode, ['image_slider','video_slider']) && count($slides))
+<section id="hero" class="hero">
+  <div class="hero-slider" aria-live="polite">
+    @foreach($slides as $i => $s)
+      @php
+        $img   = $s['image'] ?? null;
+        $video = $s['video'] ?? null;
+      @endphp
 
-{{-- ===== INTRO ===== --}}
+      @if($heroMode === 'image_slider' && $img)
+        <figure class="hero-slide {{ $i===0 ? 'is-active':'' }}" data-index="{{ $i }}" aria-hidden="{{ $i===0 ? 'false':'true' }}">
+          <img class="hero-img" src="{{ asset('storage/'.$img) }}" alt="{{ $s['title'] ?? 'slide' }}">
+          @if(!empty($s['title']) || !empty($s['subtitle']))
+            <figcaption class="hero-caption">
+              @if(!empty($s['title']))    <h1>{{ $s['title'] }}</h1> @endif
+              @if(!empty($s['subtitle'])) <p>{{ $s['subtitle'] }}</p> @endif
+            </figcaption>
+          @endif
+        </figure>
+      @elseif($heroMode === 'video_slider' && $video)
+        <figure class="hero-slide {{ $i===0 ? 'is-active':'' }}" data-index="{{ $i }}" aria-hidden="{{ $i===0 ? 'false':'true' }}">
+          <video class="hero-video" muted playsinline preload="{{ $i===0 ? 'auto':'metadata' }}" {{ $i===0 ? 'autoplay loop':'' }}>
+            <source src="{{ asset('storage/'.$video) }}" type="{{ \Illuminate\Support\Str::endsWith($video, '.webm') ? 'video/webm' : 'video/mp4' }}">
+          </video>
+          @if(!empty($s['title']) || !empty($s['subtitle']))
+            <figcaption class="hero-caption">
+              @if(!empty($s['title']))    <h1>{{ $s['title'] }}</h1> @endif
+              @if(!empty($s['subtitle'])) <p>{{ $s['subtitle'] }}</p> @endif
+            </figcaption>
+          @endif
+        </figure>
+      @endif
+    @endforeach
+  </div>
+
+  @if(count($slides) > 1)
+  <div class="hero-controls" role="tablist" aria-label="Hero slider">
+    @foreach($slides as $i => $s)
+      <button class="hero-dot {{ $i === 0 ? 'is-active':'' }}" role="tab" aria-selected="{{ $i === 0 ? 'true':'false' }}" data-go="{{ $i }}"></button>
+    @endforeach
+    <button class="hero-playpause" aria-label="Pausa" data-state="playing">❚❚</button>
+  </div>
+  @endif
+</section>
+@endif
+
+
+{{-- ===== INTRO سكشن كامل ===== --}}
 @if(!empty($introTitle) || !empty($home?->about_body) || !empty($home?->about_image))
 <section class="section intro">
   <div class="container intro-grid">
     <figure class="intro-photo framed">
-     
       @if(!empty($home?->about_image))
         <img src="{{ asset('storage/'.$home->about_image) }}" alt="{{ $introTitle }}">
       @endif
-     
     </figure>
 
     <div class="intro-text">
       <h2 class="section-title">{{ $introTitle }}</h2>
       <p class="accent-line">{{ $introAccent }}</p>
       @if(!empty($home?->about_body))
-        {{-- RichEditor: اعرض HTML كما هو --}}
         <div class="text">{!! $home->about_body !!}</div>
       @endif
     </div>
@@ -60,61 +115,62 @@ $gBody = null;
 </section>
 @endif
 
-{{-- ===== VÅRT MÅL OCH SYFTE (Goals) ===== --}}
-@if(count($goals))
+{{-- ===== GOALS ===== --}}
+@php
+    $hasGoals = !empty($goals) && is_array($goals) && count($goals) > 0;
+    $g0       = $hasGoals ? ($goals[0] ?? []) : [];
+    $g0Body   = is_array($g0) ? ($g0['text'] ?? null) : (string)$g0;
+    $g0Img    = is_array($g0) ? ($g0['image'] ?? null) : null;
+@endphp
+
+@if($hasGoals)
 <section id="goals" class="section goals">
   <div class="container goals-grid">
-
     <div class="goals-text">
-      <h2 class="section-title">{{ $goalsTitle }}</h2>
-      <p class="accent-line">{{ $goalsAccent }}</p>
+      @if(!empty($goalsTitle))  <h2 class="section-title">{{ $goalsTitle }}</h2> @endif
+      @if(!empty($goalsAccent)) <p class="accent-line">{{ $goalsAccent }}</p> @endif
 
-      {{-- ما بقاش نستعمل body ديال أول عنصر كـ "وصف عام" باش مايوقعش خلط --}}
-      @if(!empty($home?->goals_intro))
-        <p>{{ $home->goals_intro }}</p>
+      @if(!empty($g0Body))
+        <p>{{ $g0Body }}</p>
       @endif
 
-   
-      {{-- هُنا الوصف اللي كتكتب فـ "Beskrivning" ديال الـGoals (Repeater) --}}
-      @if(!empty($gBody))
-        <p>{!! nl2br(e($gBody)) !!}</p>
-      @else
-        {{-- ما كاين حتى وصف مُدخل فالعناصر --}}
+      @if(count($goals) > 1)
+        <ul class="check-list">
+          @foreach($goals as $k => $it)
+            @continue($k === 0)
+            @php $txt = is_array($it) ? ($it['text'] ?? null) : (string)$it; @endphp
+            @if(!empty($txt)) <li>{{ $txt }}</li> @endif
+          @endforeach
+        </ul>
       @endif
     </div>
 
     <figure class="goals-photo framed">
-      @if(!empty($gImage))
-        <img src="{{ asset('storage/'.$gImage) }}" alt="{{ $goalsTitle }}">
+      @if(!empty($g0Img))
+        <img src="{{ asset('storage/'.$g0Img) }}" alt="{{ $goalsTitle }}">
       @endif
     </figure>
-
   </div>
 </section>
 @endif
 
-{{-- ===== ISLAMS PELARE ===== --}}
-@if(count($pillars))
-<section class="pillars"style="background-image:url('{{ asset('assets/img/om-islam-banner.jpg') }}')">
+{{-- ===== PILLARS (اختياري) ===== --}}
+@if(!empty($pillars) && is_array($pillars) && count($pillars) > 0)
+<section class="pillars">
   <div class="container pillars-inner">
     <h2>Islams fem pelare</h2>
     <p>Som en fast grund för det goda livet: tro, bön, givmildhet, fasta och pilgrimsfärd.</p>
-
     <div class="pillars-grid">
       @foreach($pillars as $p)
+        @php
+          $icon  = is_array($p) ? ($p['icon']  ?? null) : null;
+          $label = is_array($p) ? ($p['label'] ?? ($p['title'] ?? null)) : (string)$p;
+          $desc  = is_array($p) ? ($p['text']  ?? ($p['body'] ?? null)) : null;
+        @endphp
         <article class="pillar">
-          @if(!empty($p['icon']))
-            <span class="pillar-ico"><i class="{{ $p['icon'] }}"></i></span>
-          @endif
-
-          @if(!empty($p['title']))
-            <h3 class="pillar-title">{{ $p['title'] }}</h3>
-          @endif
-
-          {{-- هنا كان المشكل: الوصف ماكانش كيتعرض. درناه صريحاً --}}
-          @if(!empty($p['body']))
-            <p class="pillar-desc">{{ $p['body'] }}</p>
-          @endif
+          @if(!empty($icon))  <span class="pillar-ico">{{ $icon }}</span> @endif
+          @if(!empty($label)) <h3 class="pillar-title">{{ $label }}</h3> @endif
+          @if(!empty($desc))  <p class="pillar-desc">{{ $desc }}</p> @endif
         </article>
       @endforeach
     </div>
@@ -122,131 +178,178 @@ $gBody = null;
 </section>
 @endif
 
-
-
-{{-- ===== Bönetider (صورة + بطاقة) ===== --}}
+{{-- ===== BÖNETIDER (تصميم أصلي + بيانات ديناميكية) ===== --}}
 <section class="section prayers-block" dir="ltr">
   <div class="container prayers-wrap">
+
     <figure class="prayers-photo">
-      {{-- ما عندناش حقل للصورة هنا فـ HomeSetting، ممكن تضيفه لاحقاً.
-           دابا كنخلي صورة ثابتة من assets باش التصميم يبقى كما هو --}}
-      <img src="/assets/img/prayer-banner.jpg" alt="Bön i moskén">
+      {{-- غيّر المسار أدناه لو عندك الصورة في مكان آخر --}}
+      <img src="{{ asset('assets/img/prayer-banner.jpg') }}" alt="Bön i moskén">
     </figure>
 
     <div class="prayers-card">
       <header class="prayers-card-head">
-        <h3>{{ $home->prayer_title ?? 'Bönetider i Botkyrka' }}</h3>
-        <small>Idag</small>
+        <h3>{{ $home->prayer_title ?? 'Bönetider i Haninge' }}</h3>
+        <small id="prayers-date">Idag</small>
       </header>
 
-      {{-- حقل النص العام --}}
-      @if(!empty($home?->prayer_body))
-        <div class="muted" style="padding:0 10px 8px">{{ $home->prayer_body }}</div>
-      @endif
-
-      {{-- جدول توضيحي (ثابت حالياً) --}}
       <table class="prayers-table">
-        <tbody>
-          <tr><th>Fajr</th><td>05:10</td></tr>
-          <tr><th>Solupp</th><td>06:31</td></tr>
-          <tr><th>Dhuhr</th><td>12:55</td></tr>
-          <tr><th>Asr</th><td>16:15</td></tr>
-          <tr><th>Maghrib</th><td>19:04</td></tr>
-          <tr><th>Isha</th><td>20:34</td></tr>
+        <tbody id="prayers-body">
+          <tr><th>Fajr</th>    <td id="pv-fajr">—</td></tr>
+          <tr><th>Solupp</th>  <td id="pv-sunrise">—</td></tr>
+          <tr><th>Dhuhr</th>   <td id="pv-dhuhr">—</td></tr>
+          <tr><th>Asr</th>     <td id="pv-asr">—</td></tr>
+          <tr><th>Maghrib</th> <td id="pv-maghrib">—</td></tr>
+          <tr><th>Isha</th>    <td id="pv-isha">—</td></tr>
         </tbody>
       </table>
 
-      @if(!empty($home?->prayer_button_text) && !empty($home?->prayer_button_url))
-        <a class="btn-month" href="{{ $home->prayer_button_url }}">{{ $home->prayer_button_text }}</a>
-      @endif
+      @php
+        $btnT = $home->prayer_button_text ?? 'Visa månadsvis';
+        $btnU = $home->prayer_button_url  ?? '#';
+      @endphp
+      <a class="btn-month" href="{{ $btnU }}">{{ $btnT }}</a>
     </div>
   </div>
 </section>
 
-{{-- ===== Våra tjänster ===== --}}
-@if(!empty($home?->services_title) || !empty($home?->services_desc) || count($services))
+@push('scripts')
+<script>
+(() => {
+  // تنسيق التاريخ السويدي أعلى البطاقة
+  const dateEl = document.getElementById('prayers-date');
+  try { dateEl.textContent = new Intl.DateTimeFormat('sv-SE', { dateStyle: 'full' }).format(new Date()); }
+  catch(e){ dateEl.textContent = 'Idag'; }
+
+  // عناصر الأوقات
+  const el = {
+    fajr:    document.getElementById('pv-fajr'),
+    sunrise: document.getElementById('pv-sunrise'),
+    dhuhr:   document.getElementById('pv-dhuhr'),
+    asr:     document.getElementById('pv-asr'),
+    maghrib: document.getElementById('pv-maghrib'),
+    isha:    document.getElementById('pv-isha'),
+  };
+
+  // تحويل "HH:MM (CEST)" إلى "HH:MM"
+  const hhmm = (s) => String(s || '').split(' ')[0];
+
+  // تحميل مواقيت اليوم من AlAdhan (يعتمد على خط العرض/الطول)
+  function loadTimings(lat, lng) {
+    const ts = Math.floor(Date.now()/1000); // اليوم
+    const tz = encodeURIComponent('Europe/Stockholm');
+    // method=3 (Muslim World League) — عدلها إن لزم
+    const url = `https://api.aladhan.com/v1/timings/${ts}?latitude=${lat}&longitude=${lng}&method=3&school=0&timezonestring=${tz}`;
+    fetch(url)
+      .then(r => r.json())
+      .then(({data}) => {
+        if (!data || !data.timings) throw new Error('No timings');
+        const t = data.timings;
+
+        if (el.fajr)    el.fajr.textContent    = hhmm(t.Fajr    || t.fajr);
+        if (el.sunrise) el.sunrise.textContent = hhmm(t.Sunrise || t.sunrise);
+        if (el.dhuhr)   el.dhuhr.textContent   = hhmm(t.Dhuhr   || t.dhuhr || t.Zuhr);
+        if (el.asr)     el.asr.textContent     = hhmm(t.Asr     || t.asr);
+        if (el.maghrib) el.maghrib.textContent = hhmm(t.Maghrib || t.maghrib);
+        if (el.isha)    el.isha.textContent    = hhmm(t.Isha    || t.isha);
+      })
+      .catch(() => {
+        // لو فشل الجلب، على الأقل خلّي التاريخ موجود والباقي شرطات —
+      });
+  }
+
+  // إحداثيات احتياطية: Botkyrka/Haninge تقريبًا
+  const fallback = { lat: 59.2239, lng: 17.8390 };
+
+  // تحديد الموقع من المتصفح (ثم سقوط احتياطي)
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => loadTimings(pos.coords.latitude, pos.coords.longitude),
+      ()  => loadTimings(fallback.lat, fallback.lng),
+      { timeout: 5000 }
+    );
+  } else {
+    loadTimings(fallback.lat, fallback.lng);
+  }
+})();
+</script>
+@endpush
+
+
+@php
+    $services = is_array($home->services ?? null) ? $home->services : [];
+@endphp
+
+@if(!empty($services))
 <section id="services" class="section services">
   <div class="container">
     <header class="section-head">
-      <h2 class="section-title green">{{ $home->services_title ?? 'Våra tjänster' }}</h2>
-      <p class="muted">{{ $home->services_desc ?? 'Vi erbjuder en rad tjänster för vår församling i Botkyrka.' }}</p>
+      @if(!empty($home->services_title))
+        <h2 class="section-title green">{{ $home->services_title }}</h2>
+      @endif
+      @if(!empty($home->services_desc))
+        <div class="muted">{!! $home->services_desc !!}</div>
+      @endif
     </header>
 
     <div class="services-grid">
-      @forelse($services as $srv)
+      @foreach($services as $svc)
+        @php
+          $img  = $svc['image']       ?? null;
+          $tit  = $svc['title']       ?? null;
+          $txt  = $svc['text']        ?? null;
+          $btnT = $svc['button_text'] ?? null;
+          $btnU = $svc['button_url']  ?? null;
+        @endphp
+
         <article class="service-card">
-          @if(!empty($srv['image']))
-            <img src="{{ asset('storage/'.$srv['image']) }}" alt="{{ $srv['title'] ?? '' }}">
-          @else
-            <img src="/assets/img/services/prayer.jpg" alt="Tjänst">
+          @if($img)
+            <img src="{{ asset('storage/'.$img) }}" alt="{{ $tit ?? '' }}">
           @endif
           <div class="service-body">
-            <h3>{{ $srv['title'] ?? '' }}</h3>
-            <p>{{ $srv['body'] ?? '' }}</p>
-            @if(!empty($srv['button_text']) && !empty($srv['button_url']))
-              <a class="btn btn-orange" href="{{ $srv['button_url'] }}">{{ $srv['button_text'] }}</a>
+            @if($tit) <h3>{{ $tit }}</h3> @endif
+            @if($txt) <p>{{ $txt }}</p>   @endif
+            @if($btnT && $btnU)
+              <a class="btn btn-orange" href="{{ $btnU }}">{{ $btnT }}</a>
             @endif
           </div>
         </article>
-      @empty
-        {{-- fallback كارتات ثابتة إلى أن تضيف خدمات من لوحة التحكم --}}
-      @endforelse
+      @endforeach
     </div>
   </div>
 </section>
 @endif
+{{-- ===== CTA (من الأدمن) ===== --}}
+@php
+  $ctaTitle = $home->cta_title ?? null;
+  $ctaSub   = $home->cta_subtitle ?? null;
+  $ctaBtnT  = $home->cta_button_text ?? null;
+  $ctaBtnU  = $home->cta_button_url  ?? null;
+  $ctaBg = $home->cta_background ?? null;
+@endphp
 
-{{-- ===== CTA بخلفية ===== --}}
-@if(!empty($home?->cta_title) || !empty($home?->cta_subtitle) || (!empty($home?->cta_button_text) && !empty($home?->cta_button_url)))
+@if($ctaTitle || $ctaSub || ($ctaBtnT && $ctaBtnU))
 <section class="cta-bg">
-  <div class="cta-overlay"></div>
+@if($ctaBg)
+    style="--cta-bg: url('{{ asset('storage/'.$ctaBg) }}');"
+  @endif
+  <div class="cta-overlay">
   <div class="container cta-inner">
-    <h2>{{ $home->cta_title ?? 'En plats för dig' }}</h2>
-    <p>
-      {{ $home->cta_subtitle ?? 'Bli en del av oss på Alby moskén, bli medlem!' }}
-    </p>
-    @if(!empty($home?->cta_button_text) && !empty($home?->cta_button_url))
-      <a class="cta-btn" href="{{ $home->cta_button_url }}">{{ $home->cta_button_text }}</a>
+    @if($ctaTitle)
+      <h2>{{ $ctaTitle }}</h2>
+    @endif
+
+    @if($ctaSub)
+      {{-- نحافظ على أسطر جديدة إن وُجدت --}}
+      <p>{!! nl2br(e($ctaSub)) !!}</p>
+    @endif
+
+    @if($ctaBtnT && $ctaBtnU)
+      <a class="cta-btn" href="{{ $ctaBtnU }}">{{ $ctaBtnT }}</a>
     @endif
   </div>
+</div>
 </section>
 @endif
-
-{{-- ===== Senaste nytt ===== --}}
-@if(!empty($home?->show_latest_news))
-  @php
-    $limit = (int) ($home->latest_news_limit ?? 6);
-    try { $latest = \App\Models\Blog::query()->latest()->take($limit)->get(); }
-    catch (\Throwable $e) { $latest = collect(); }
-  @endphp
-
-  @if($latest->count())
-  <section id="news" class="section news">
-    <div class="container">
-      <header class="section-head">
-        <h2 class="section-title green">Senaste nytt</h2>
-      </header>
-
-      <div class="news-grid">
-        @foreach($latest as $post)
-          <article class="news-card">
-            <h3>
-              <a href="{{ route('blog.show', $post->slug ?? $post->id) }}">{{ $post->title }}</a>
-            </h3>
-            <p class="meta">{{ optional($post->created_at)->format('d M Y') }} • Alby</p>
-            @if(!empty($post->excerpt))
-              <p>{{ $post->excerpt }}</p>
-            @endif
-            <a href="{{ route('blog.show', $post->slug ?? $post->id) }}" class="readmore">Läs mer</a>
-          </article>
-        @endforeach
-      </div>
-    </div>
-  </section>
-  @endif
-@endif
-
-{{-- ===== Footer ===== --}}
-{{-- من layout: @includeIf('partials.footer') --}}
 
 @endsection

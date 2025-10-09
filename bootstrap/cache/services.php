@@ -44,9 +44,8 @@
     40 => 'Termwind\\Laravel\\TermwindServiceProvider',
     41 => 'Phiki\\Adapters\\Laravel\\PhikiServiceProvider',
     42 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
-    43 => 'App\\Providers\\FilamentServiceProvider',
-    44 => 'App\\Providers\\AppServiceProvider',
-    45 => 'App\\Providers\\Filament\\AdminPanelProvider',
+    43 => 'App\\Providers\\AppServiceProvider',
+    44 => 'App\\Providers\\Filament\\AdminPanelProvider',
   ),
   'eager' => 
   array (
@@ -78,9 +77,8 @@
     25 => 'Termwind\\Laravel\\TermwindServiceProvider',
     26 => 'Phiki\\Adapters\\Laravel\\PhikiServiceProvider',
     27 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
-    28 => 'App\\Providers\\FilamentServiceProvider',
-    29 => 'App\\Providers\\AppServiceProvider',
-    30 => 'App\\Providers\\Filament\\AdminPanelProvider',
+    28 => 'App\\Providers\\AppServiceProvider',
+    29 => 'App\\Providers\\Filament\\AdminPanelProvider',
   ),
   'deferred' => 
   array (

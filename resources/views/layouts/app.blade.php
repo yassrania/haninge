@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>@yield('title','Haninge Islamiska Forum')</title>
-
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
   {{-- Livewire (اختياري للفرونت) --}}
@@ -49,11 +48,22 @@
       }
     });
   </script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
 
   {{-- Livewire (اختياري) --}}
   @livewireScripts
 
   {{-- مساحة لإضافة سكريبتات خاصة بكل صفحة --}}
   @stack('scripts')
+  <script>
+document.addEventListener('livewire:init', () => {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (meta) {
+    Livewire.setHeaders({ 'X-CSRF-TOKEN': meta.getAttribute('content') });
+  }
+});
+</script>
+
 </body>
 </html>

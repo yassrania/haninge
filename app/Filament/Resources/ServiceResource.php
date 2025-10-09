@@ -6,137 +6,288 @@ use App\Filament\Resources\ServiceResource\Pages;
 use App\Models\Service;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
+
+// Components
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Builder;
 
 class ServiceResource extends Resource
 {
     protected static ?string $model = Service::class;
 
-    protected static ?string $navigationGroup = 'Innehåll';
-    protected static ?string $navigationLabel = 'Tjänstsidor';
-    protected static ?string $modelLabel       = 'Tjänstsida';
     protected static ?string $navigationIcon   = 'heroicon-o-briefcase';
+    protected static ?string $navigationLabel  = 'Tjänster';
+    protected static ?string $pluralModelLabel = 'Tjänster';
+    protected static ?string $modelLabel       = 'Tjänst';
+    protected static ?string $navigationGroup  = 'Sajtinställningar';
 
     public static function form(Form $form): Form
     {
-        $urlRule = ['nullable', 'regex:/^(\/|#|https?:\/\/)[^\s]+$/'];
-
         return $form->schema([
-            Forms\Components\Section::make('Sidhuvud')->schema([
-                Forms\Components\TextInput::make('title')
-                    ->label('Titel')
-                    ->required()
-                    ->maxLength(160)
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function ($state, callable $set, Get $get) {
-                        if (!$get('slug')) $set('slug', Str::slug($state));
-                    }),
+            Tabs::make('Tjänst')->tabs([
 
-                Forms\Components\TextInput::make('subtitle')
-                    ->label('Undertitel')
-                    ->maxLength(180),
+                // ============ Allmänt ============
+                Tab::make('Allmänt')->schema([
+                    TextInput::make('title')
+                        ->label('Titel')
+                        ->required()
+                        ->maxLength(255),
 
-                Forms\Components\TextInput::make('slug')
-                    ->label('Slug (URL)')
-                    ->helperText('ex: islamisk-begravning')
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->maxLength(180),
-            ])->columns(3),
+                    TextInput::make('slug')
+                        ->label('Slug')
+                        ->required()
+                        ->maxLength(255)
+                        ->unique(ignoreRecord: true),
 
-            Forms\Components\Section::make('Page banner')->schema([
-                Forms\Components\FileUpload::make('page_banner')
-                    ->label('Banner-bild')
-                    ->directory('services/page')
-                    ->disk('public')
-                    ->image(),
-            ]),
+                    Toggle::make('published')
+                        ->label('Publicerad')
+                        ->default(true),
 
-            Forms\Components\Section::make('Service-rader (1–4)')->schema([
-                Forms\Components\Repeater::make('service_rows')
-                    ->label('Rader')
-                    ->minItems(1)->maxItems(4)
-                    ->reorderable(true)
-                    ->schema([
-                        Forms\Components\FileUpload::make('photo')
-                            ->label('Foto')
-                            ->directory('services/rows')
-                            ->disk('public')
-                            ->image()
-                            ->panelLayout('compact'),
+                    FileUpload::make('page_banner')
+                        ->label('Banner (överst)')
+                        ->disk('public')
+                        ->directory('services/banners')
+                        ->visibility('public')
+                        ->image()
+                        ->maxSize(8192)
+                        ->openable()
+                        ->downloadable()
+                        ->nullable(),
 
-                        Forms\Components\TextInput::make('title')
-                            ->label('Titel')
-                            ->maxLength(160),
+                    TextInput::make('subtitle')
+                        ->label('Undertitel')
+                        ->maxLength(255)
+                        ->nullable(),
+                      
 
-                        Forms\Components\TextInput::make('subtitle')
-                            ->label('Undertitel')
-                            ->maxLength(180),
+// داخل schema تبويب Allmänt (أو المكان اللي يناسبك):
+Select::make('inbox_target')
+    ->label('Skicka till inkorg')
+    ->options([
+        'vigsel'   => 'Vigselförfrågningar',
+        'vuxen'    => 'Vuxenstudier',
+        'barn'     => 'Barnstudier',
+        'kontakt'  => 'Kontaktmeddelanden',
+    ])
+    ->helperText('Välj vilken inkorg som ska ta emot formuläret.')
+    ->nullable(),
 
-                        Forms\Components\Textarea::make('description')
-                            ->label('Beskrivning')
-                            ->rows(8)
-                            ->columnSpanFull(),
-                    ])
-                    ->columns(2),
-            ]),
+                ])->columns(2),
 
-            Forms\Components\Section::make('Utbildning – Vuxna')->schema([
-                Forms\Components\FileUpload::make('utbildning_vuxna_photo')
-                    ->label('Foto (Vuxna)')
-                    ->directory('services/utbildning')
-                    ->disk('public')
-                    ->image(),
-                Forms\Components\TextInput::make('utbildning_vuxna_title')
-                    ->label('Titel (Vuxna)')
-                    ->maxLength(160),
-                Forms\Components\Textarea::make('utbildning_vuxna_desc')
-                    ->label('Beskrivning (Vuxna)')
-                    ->rows(8)
-                    ->columnSpanFull(),
-            ])->columns(2),
+                // ============ Innehåll (Builder) ============
+                Tab::make('Innehåll')->schema([
+                    Builder::make('blocks')
+                        ->label('Innehållsblock')
+                        ->blocks([
+                            // عنوان قسم
+                            Builder\Block::make('section_title')
+                                ->label('Rubrik (sektion)')
+                                ->schema([
+                                    TextInput::make('title')->label('Rubrik (H2)')->required(),
+                                    TextInput::make('subtitle')->label('Underrubrik (H6)')->nullable(),
+                                ]),
 
-            Forms\Components\Section::make('Utbildning – Barn')->schema([
-                Forms\Components\FileUpload::make('utbildning_barn_photo')
-                    ->label('Foto (Barn)')
-                    ->directory('services/utbildning')
-                    ->disk('public')
-                    ->image(),
-                Forms\Components\TextInput::make('utbildning_barn_title')
-                    ->label('Titel (Barn)')
-                    ->maxLength(160),
-                Forms\Components\Textarea::make('utbildning_barn_desc')
-                    ->label('Beskrivning (Barn)')
-                    ->rows(8)
-                    ->columnSpanFull(),
-            ])->columns(2),
+                            // نص غني
+                            Builder\Block::make('rich_text')
+                                ->label('Rich text')
+                                ->schema([
+                                    RichEditor::make('content')
+                                        ->label('Text')
+                                        ->fileAttachmentsDisk('public')
+                                        ->fileAttachmentsDirectory('services/content')
+                                        ->columnSpanFull(),
+                                ]),
 
-            Forms\Components\Toggle::make('published')
-                ->label('Publicerad')
-                ->default(true),
-        ]);
+                            // صورة + نص (نفس مفاتيح show.blade)
+                            Builder\Block::make('image_with_text')
+                                ->label('Bild + Text')
+                                ->schema([
+                                    FileUpload::make('image')
+                                        ->label('Bild')
+                                        ->disk('public')
+                                        ->directory('services/blocks')
+                                        ->visibility('public')
+                                        ->image()
+                                        ->maxSize(8192)
+                                        ->openable()
+                                        ->downloadable()
+                                        ->required(),
+
+                                    TextInput::make('title')->label('Rubrik')->nullable(),
+                                    Textarea::make('text')->label('Text')->rows(5)->nullable(),
+
+                                   Select::make('image_position')
+    ->label('Bildposition')
+    ->options([
+        'left'  => 'Vänster',
+        'right' => 'Höger',
+    ])
+    ->default('left')
+    ->required(),
+                                ])->columns(2),
+                        ])
+                        ->collapsed(),
+                ])->columns(1),
+
+               // ============ Formulär ============
+Tab::make('Formulär')->schema([
+
+    TextInput::make('form_title')
+        ->label('Formulärtitel')
+        ->placeholder('Ansök om vigsel i enlighet med Islam')
+        ->nullable(),
+
+    Forms\Components\Repeater::make('form_fields')
+        ->label('Formulärfält')
+        ->schema([
+
+            // المجموعة / الخطوة (لعرض النموذج كـ wizard)
+            TextInput::make('group')
+                ->label('Steg / Grupp')
+                ->placeholder('MAKE / MAKA / DATUM')
+                ->required(),
+
+            // ترتيب داخل الخطوة
+            TextInput::make('order')
+                ->numeric()
+                ->label('Ordning')
+                ->default(0),
+
+            // نوع الحقل
+            Select::make('type')
+                ->label('Typ')
+                ->options([
+                    'text'        => 'Text',
+                    'email'       => 'Email',
+                    'tel'         => 'Telefon',
+                    'textarea'    => 'Textområde',
+                    'select'      => 'Välj',
+                    'checkbox'    => 'Checkbox',
+                    'file'        => 'Fil',
+                    'date'        => 'Datum',
+                    'time'        => 'Tid',
+                    'description' => 'Beskrivande text', // النص الوصفي (بدون input)
+                ])
+                ->required(),
+
+            // اسم الحقل (غير مطلوب إذا النوع وصف "description")
+            TextInput::make('name')
+                ->label('Name (slug)')
+                ->helperText('t.ex. groom_first_name, bride_email, ceremony_date')
+                ->required(fn (callable $get) => $get('type') !== 'description')
+                ->visible(fn (callable $get) => $get('type') !== 'description'),
+
+            // التسمية (label) — ليست ضرورية للوصف أو للـ checkbox
+            TextInput::make('label')
+                ->label('Etikett')
+                ->required(fn (callable $get) => !in_array($get('type'), ['description', 'checkbox']))
+                ->visible(fn (callable $get) => $get('type') !== 'description'),
+
+            TextInput::make('placeholder')
+                ->label('Placeholder')
+                ->nullable()
+                ->visible(fn (callable $get) => !in_array($get('type'), ['description', 'checkbox', 'select'])),
+
+            TextInput::make('help')
+                ->label('Hjälptext')
+                ->nullable()
+                ->visible(fn (callable $get) => $get('type') !== 'description'),
+
+            // خيارات للقائمة (select) فقط
+            TextInput::make('options')
+                ->label('Alternativ (för select)')
+                ->helperText('comma,separated')
+                ->nullable()
+                ->visible(fn (callable $get) => $get('type') === 'select'),
+
+            // الوصف النصي (RichEditor) — يظهر فقط لنوع description
+            RichEditor::make('content')
+                ->label('Beskrivande text')
+                ->fileAttachmentsDisk('public')
+                ->fileAttachmentsDirectory('services/forms/content')
+                ->visible(fn (callable $get) => $get('type') === 'description')
+                ->columnSpanFull(),
+
+            // مطلوب؟ (لا معنى لها للوصف)
+            Select::make('required')
+                ->label('Obligatorisk?')
+                ->options(['0' => 'Nej', '1' => 'Ja'])
+                ->default('0')
+                ->visible(fn (callable $get) => $get('type') !== 'description'),
+
+            // عرض الحقل (شبكة مرنة) — ليس للوصف (الوصف يأخذ عرض كامل)
+            Select::make('width')
+                ->label('Bredd')
+                ->options([
+                    '1'   => '100%',
+                    '1/2' => '50%',
+                    '1/3' => '33%',
+                ])
+                ->default('1/3')
+                ->visible(fn (callable $get) => $get('type') !== 'description'),
+
+        ])
+        ->columns(3)
+        ->orderable('order')    // السحب لترتيب الحقول داخل المجموعة
+        ->collapsed()
+        ->addActionLabel('Lägg till fält'),
+
+])->columns(2),
+
+
+                // ============ Donera ============
+                Tab::make('Donera')->schema([
+                    FileUpload::make('donate_qr_image')
+                        ->label('QR-bild')
+                        ->disk('public')
+                        ->directory('services/donate')
+                        ->visibility('public')
+                        ->image()
+                        ->maxSize(8192)
+                        ->openable()
+                        ->downloadable()
+                        ->nullable(),
+
+                    TextInput::make('donate_title')->label('Rubrik')->maxLength(255)->nullable(),
+                    TextInput::make('donate_subtitle')->label('Underrubrik')->maxLength(255)->nullable(),
+
+                    RichEditor::make('donate_article')
+                        ->label('Artikel / text')
+                        ->fileAttachmentsDisk('public')
+                        ->fileAttachmentsDirectory('services/donate/content')
+                        ->columnSpanFull()
+                        ->nullable(),
+
+                    TextInput::make('donate_btn_text')->label('Knapptitel')->maxLength(255)->nullable(),
+                    TextInput::make('donate_btn_url')->label('URL')->url()->nullable(),
+                ])->columns(2),
+
+            ])->columnSpanFull(),
+        ])->columns(2);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('title')->label('Titel')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('slug')->label('Slug')->copyable(),
-                Tables\Columns\IconColumn::make('published')->label('Status')->boolean(),
-                Tables\Columns\TextColumn::make('updated_at')->label('Uppdaterad')->since(),
+                Tables\Columns\TextColumn::make('title')->label('Titel')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('slug')->label('Slug')->sortable()->searchable(),
+                Tables\Columns\IconColumn::make('published')->boolean()->label('Publicerad'),
+                Tables\Columns\TextColumn::make('updated_at')->dateTime()->label('Uppdaterad'),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]);
+            ->filters([])
+            ->actions([ Tables\Actions\EditAction::make() ])
+            ->bulkActions([]);
     }
 
     public static function getPages(): array

@@ -12,7 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class FooterSettingResource extends Resource
+class FooterLinkGroupResource extends Resource
 {
     protected static ?string $model = FooterSetting::class;
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';

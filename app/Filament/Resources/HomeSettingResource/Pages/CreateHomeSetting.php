@@ -3,10 +3,14 @@
 namespace App\Filament\Resources\HomeSettingResource\Pages;
 
 use App\Filament\Resources\HomeSettingResource;
-use Filament\Actions;
-use Filament\Resources\Pages\CreateRecord;
+use Filament\Resources\Pages\Page;
 
-class CreateHomeSetting extends CreateRecord
+class CreateHomeSetting extends Page
 {
     protected static string $resource = HomeSettingResource::class;
+
+    public function mount(): void
+    {
+        $this->redirect(HomeSettingResource::getUrl('manage'));
+    }
 }

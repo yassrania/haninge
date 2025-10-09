@@ -12,10 +12,16 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn; 
+use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\RepeatableEntry;
 
 class VigselApplicationResource extends Resource
 {
-    protected static ?string $model = VigselApplication::class;
+    protected static ?string $model = \App\Models\Inbox\VigselInquiry::class;
 protected static ?string $navigationGroup = 'Inkorgar';
 protected static ?string $navigationLabel = 'Vigselförfrågningar';
 protected static ?string $navigationIcon = 'heroicon-o-heart';
@@ -29,18 +35,55 @@ protected static ?int $navigationSort = 10;
                 //
             ]);
     }
+   public static function infolist(Infolist $infolist): Infolist
+{
+    return $infolist->schema([
+        Section::make('Avsändare')->columns(3)->schema([
+            TextEntry::make('name')->label('Namn'),
+            TextEntry::make('email')->label('E-post'),
+            TextEntry::make('phone')->label('Telefon'),
+            TextEntry::make('source_slug')->label('Källa')->badge(),
+            TextEntry::make('created_at')->label('Skickad')->dateTime(),
+        ]),
+
+        Section::make('Formuläruppgifter')->schema([
+            RepeatableEntry::make('data_items')
+                ->label('Fält')
+                // حوّل data {key:value} إلى [{key, value}, ...]
+                ->state(function ($record) {
+                    return collect($record->data ?? [])
+                        ->map(function ($v, $k) {
+                            if (is_array($v) || is_object($v)) {
+                                $v = json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                            }
+                            return ['key' => (string) $k, 'value' => (string) $v];
+                        })
+                        ->values()
+                        ->all();
+                })
+                ->schema([
+                    TextEntry::make('key')->label('Fält'),
+                    TextEntry::make('value')->label('Värde')->columnSpan(2),
+                ])
+                ->columns(3)
+                ->columnSpanFull(),
+        ])->collapsible(),
+    ]);
+}
+
+
 
     public static function table(Table $table): Table
     {
         return $table
-            ->columns([
-                ables\Columns\TextColumn::make('first_name')->label('Förnamn')->searchable(),
-        Tables\Columns\TextColumn::make('last_name')->label('Efternamn')->searchable(),
-        Tables\Columns\TextColumn::make('email')->label('E-post'),
-        Tables\Columns\TextColumn::make('requested_date')->date()->label('Önskat datum'),
-        Tables\Columns\IconColumn::make('handled')->boolean()->label('Hanterad'),
-        Tables\Columns\TextColumn::make('created_at')->dateTime('Y-m-d H:i')->label('Mottaget'),
-            ])
+           ->columns([
+            TextColumn::make('id')->label('ID')->sortable(),
+            TextColumn::make('name')->label('Namn')->searchable(),
+            TextColumn::make('email')->label('E-post')->searchable(),
+            TextColumn::make('phone')->label('Telefon')->searchable(),
+            TextColumn::make('source_slug')->label('Källa')->badge(),
+            TextColumn::make('created_at')->label('Skickad')->dateTime()->sortable(),
+        ])
             ->filters([
                 //
             ])

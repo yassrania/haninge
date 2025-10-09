@@ -7,6 +7,10 @@
 @endphp
 
 <footer id="contact" class="site-footer">
+ <div class="footer-skyline" aria-hidden="true"></div>
+
+
+  
   <div class="container footer-inner">
     <div class="footer-brand">
       @if($footer?->brand_logo)

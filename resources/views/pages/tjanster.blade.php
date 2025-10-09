@@ -1,119 +1,112 @@
 @php
-    use App\Models\TjansterPage;
-    use App\Models\HomeSetting;
+    use App\Models\ServicesPageSetting;
 
-    /** @var TjansterPage|null $page */
-    $page = TjansterPage::query()->first();
+    $s = ServicesPageSetting::first();
 
-    $rows    = (array) ($page->service_rows ?? []);
-    $pillars = (array) (HomeSetting::query()->first()->pillars ?? []);
+    // Banner
+    $banner = $s?->banner ? asset('storage/'.$s->banner) : asset('assets/img/om-islam-banner.jpg');
+    $title  = $s?->title ?? 'Våra tjänster';
+    $sub    = $s?->subtitle ?? null;
+
+    // Kort
+    $cardsTitle = $s?->cards_section_title ?? null;
+    $cardsSub   = $s?->cards_section_subtitle ?? null;
+    $cardsDesc  = $s?->cards_section_description ?? null;
+    $cards      = (array) ($s?->cards ?? []);
+
+    // Utbildning
+    $eduTitle = $s?->education_title ?? null;
+    $eduSub   = $s?->education_subtitle ?? null;
+    $eduDesc  = $s?->education_description ?? null;
+    $edu      = (array) ($s?->education_items ?? []);
 @endphp
 
 @extends('layouts.app')
-
-@section('title', 'Tjänster')
+@section('title', $title)
 
 @section('content')
 
 {{-- ===== Banner ===== --}}
-@if(!empty($page?->page_banner))
-<section class="page-banner">
-    <img src="{{ asset('storage/'.$page->page_banner) }}" alt="Tjänster">
+<section class="page-banner" style="background-image:url('{{ $banner }}')">
+  <div class="overlay"></div>
+  <div class="container banner-inner">
+    <h1>{{ $title }}</h1>
+    @if($sub)<p>{{ $sub }}</p>@endif
+  </div>
 </section>
-@endif
 
-{{-- ===== Service rows (1..4) ===== --}}
-@if(count($rows))
-    @foreach($rows as $i => $r)
-    <section class="service-row">
-        <div class="container service-grid">
-            <figure class="service-photo">
-                @if(!empty($r['photo']))
-                    <img src="{{ asset('storage/'.$r['photo']) }}" alt="{{ $r['title'] ?? 'Tjänst' }}">
-                @endif
-            </figure>
-            <div class="service-text">
-                @if(!empty($r['title']))
-                    <h2 class="section-title">{{ $r['title'] }}</h2>
-                @endif
-                @if(!empty($r['subtitle']))
-                    <p class="accent-line">{{ $r['subtitle'] }}</p>
-                @endif
-                @if(!empty($r['description']))
-                    <div class="text">{!! nl2br(e($r['description'])) !!}</div>
-                @endif
-            </div>
+<main>
+
+  {{-- ===== KORT (العناوين العامة + الكروت) ===== --}}
+  @if($cardsTitle || $cardsSub || $cardsDesc || count($cards))
+  <section class="section">
+    <div class="container">
+      @if($cardsTitle)<h2 class="section-title">{{ $cardsTitle }}</h2>@endif
+      @if($cardsSub)<h6 class="orange">{{ $cardsSub }}</h6>@endif
+      @if($cardsDesc)<div class="text">{!! $cardsDesc !!}</div>@endif
+
+      @foreach($cards as $c)
+        @php
+          $img   = !empty($c['image']) ? asset('storage/'.$c['image']) : null;
+          $posRaw= strtolower(trim($c['image_position'] ?? 'left'));
+          // دعم كتابات متعددة لليمين
+          $pos   = in_array($posRaw, ['right','höger','hoger']) ? 'right' : 'left';
+        @endphp
+
+        <div class="prayer-grid {{ $pos === 'right' ? 'img-right' : 'img-left' }}" style="margin-bottom:28px">
+          <figure class="prayer-frame frame">
+            @if($img)<img src="{{ $img }}" alt="{{ $c['title'] ?? '' }}">@endif
+          </figure>
+
+          <div class="prayer-text">
+            @if(!empty($c['title']))    <h2 class="green">{{ $c['title'] }}</h2>@endif
+            @if(!empty($c['subtitle'])) <h6 class="orange">{{ $c['subtitle'] }}</h6>@endif
+            @if(!empty($c['body']))     <div class="text">{!! $c['body'] !!}</div>@endif
+            @if(!empty($c['button_text']) && !empty($c['button_url']))
+              <a class="btn-orange" href="{{ $c['button_url'] }}">{{ $c['button_text'] }}</a>
+            @endif
+          </div>
         </div>
-    </section>
-    @endforeach
-@endif
-
-{{-- ===== Islams fem pelare ===== --}}
-@if(count($pillars))
-<section class="pillars">
-  <div class="container pillars-inner">
-    <h2>Islams fem pelare</h2>
-    <p>Som en fast grund för det goda livet: tro, bön, givmildhet, fasta och pilgrimsfärd.</p>
-
-    <div class="pillars-grid">
-      @foreach($pillars as $p)
-        <article class="pillar">
-          @if(!empty($p['icon']))
-            <span class="pillar-ico"><i class="{{ $p['icon'] }}"></i></span>
-          @endif
-          @if(!empty($p['title']))
-            <h3 class="pillar-title">{{ $p['title'] }}</h3>
-          @endif
-          @if(!empty($p['body']))
-            <p class="pillar-desc">{{ $p['body'] }}</p>
-          @endif
-        </article>
       @endforeach
     </div>
-  </div>
-</section>
-@endif
+  </section>
 
-{{-- ===== Utbildning – Vuxna ===== --}}
-@if(!empty($page?->utbildning_vuxna_title) || !empty($page?->utbildning_vuxna_desc) || !empty($page?->utbildning_vuxna_photo))
-<section class="utbildning vuxna">
-  <div class="container service-grid">
-    <figure class="service-photo">
-      @if(!empty($page?->utbildning_vuxna_photo))
-        <img src="{{ asset('storage/'.$page->utbildning_vuxna_photo) }}" alt="{{ $page->utbildning_vuxna_title ?? 'Vuxna' }}">
-      @endif
-    </figure>
-    <div class="service-text">
-      @if(!empty($page?->utbildning_vuxna_title))
-        <h2 class="section-title">{{ $page->utbildning_vuxna_title }}</h2>
-      @endif
-      @if(!empty($page?->utbildning_vuxna_desc))
-        <div class="text">{!! nl2br(e($page->utbildning_vuxna_desc)) !!}</div>
-      @endif
+  {{-- فاصل ديكوري اختياري --}}
+  <section class="prayer-band" aria-hidden="true"></section>
+  @endif
+
+  {{-- ===== UTBILDNING ===== --}}
+  @if($eduTitle || $eduSub || $eduDesc || count($edu))
+  <section class="section">
+    <div class="container">
+      @if($eduTitle)<h2 class="section-title">{{ $eduTitle }}</h2>@endif
+      @if($eduSub)  <h6 class="orange">{{ $eduSub }}</h6>@endif
+      @if($eduDesc) <div class="text">{!! $eduDesc !!}</div>@endif
+
+      @foreach($edu as $e)
+        @php
+          $eImg = !empty($e['image']) ? asset('storage/'.$e['image']) : null;
+          $ePos = in_array(strtolower(trim($e['image_position'] ?? 'left')), ['right','höger','hoger']) ? 'right' : 'left';
+        @endphp
+
+        <div class="prayer-grid {{ $ePos === 'right' ? 'img-right' : 'img-left' }}" style="margin-bottom:28px">
+          <figure class="prayer-frame frame">
+            @if($eImg)<img src="{{ $eImg }}" alt="{{ $e['title'] ?? '' }}">@endif
+          </figure>
+
+          <div class="prayer-text">
+            @if(!empty($e['title']))    <h3 class="green">{{ $e['title'] }}</h3>@endif
+            @if(!empty($e['subtitle'])) <h6 class="orange">{{ $e['subtitle'] }}</h6>@endif
+            @if(!empty($e['body']))     <div class="text">{!! $e['body'] !!}</div>@endif
+            @if(!empty($e['button_text']) && !empty($e['button_url']))
+              <a class="btn-orange" href="{{ $e['button_url'] }}">{{ $e['button_text'] }}</a>
+            @endif
+          </div>
+        </div>
+      @endforeach
     </div>
-  </div>
-</section>
-@endif
+  </section>
+  @endif
 
-{{-- ===== Utbildning – Barn ===== --}}
-@if(!empty($page?->utbildning_barn_title) || !empty($page?->utbildning_barn_desc) || !empty($page?->utbildning_barn_photo))
-<section class="utbildning barn">
-  <div class="container service-grid">
-    <figure class="service-photo">
-      @if(!empty($page?->utbildning_barn_photo))
-        <img src="{{ asset('storage/'.$page->utbildning_barn_photo) }}" alt="{{ $page->utbildning_barn_title ?? 'Barn' }}">
-      @endif
-    </figure>
-    <div class="service-text">
-      @if(!empty($page?->utbildning_barn_title))
-        <h2 class="section-title">{{ $page->utbildning_barn_title }}</h2>
-      @endif
-      @if(!empty($page?->utbildning_barn_desc))
-        <div class="text">{!! nl2br(e($page->utbildning_barn_desc)) !!}</div>
-      @endif
-    </div>
-  </div>
-</section>
-@endif
-
+</main>
 @endsection

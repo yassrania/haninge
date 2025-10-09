@@ -265,61 +265,89 @@ a{color:inherit; text-decoration:none}
 @media (max-width: 640px){.services-grid{grid-template-columns: 1fr}}
 
 /* ========== CTA band ========== */
-/* ===== CTA background with overlay & blur ===== */
-/* ===== CTA background only ===== */
+
 .cta-bg-overlay{
   position:relative;
   width:100%;
-  min-height:400px; /* ارتفاع قريب من الأصلي */
-  background:url('/assets/img/cta-bg.jpg') center/cover no-repeat;
+  min-height:400px;
+  /* بدل هذا:
+  background:url('/assets/img/cta-bg.jpg') center/cover no-repeat; */
+  background: var(--cta-bg, url('/assets/img/.jpg')) center/cover no-repeat;
   overflow:hidden;
 }
 .cta-bg-overlay::before{
   content:"";
   position:absolute;
   inset:0;
-  backdrop-filter: blur(0px);       /* بلور */
-  background:rgba(31,122,47,0.55);  /* أوفرلاي أخضر شفاف */
+  backdrop-filter: blur(0px);
+  background:rgba(31,122,47,0.55);
 }
 
+/* ===== CTA section ===== */
+/* سكشن CTA بالخلفية */
 .cta-bg{
-  position:relative;
-  min-height:300px;
-  color:#fff;
-  text-align:center;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:80px 20px;
-  overflow:hidden;
-  background:url('/assets/img/cta-bg.jpg') center/cover no-repeat;
+  position: relative;
+  /* خلّي السكشن ياخد ارتفاع مريح ويتمدّد */
+  min-height: clamp(360px, 65vh, 680px);
+  color: #fff;
+  overflow: hidden;
+
+  /* وسّط كل شيء بدون تأثير padding */
+  display: grid;
+  place-items: center;     /* يوسّط أفقي + عمودي */
+  padding: 0;              /* ما نحتاجش padding خارجي هنا */
+
+  /* الخلفية (افتراضيًا)؛ سيتبدّل بالمتغيّر لو جاء من الأدمن */
+  background: var(--cta-bg, url('/assets/img/cta-bg.jpg')) center/cover no-repeat;
 }
+
 .cta-bg::before{
   content:"";
   position:absolute;
   inset:0;
-  backdrop-filter: blur(3px);   /* البلور */
-  background:rgba(31,122,47,0.65); /* أخضر شفاف */
+  backdrop-filter: blur(3px);
+  background: rgba(31,122,47,0.65);
   z-index:0;
+  pointer-events: none;
 }
+
+/* الحاوية الداخلية */
 .cta-inner{
-  position:relative;
-  z-index:1;
-  max-width:900px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 900px;
+
+  /* تأكد من التوسيط والتمدد */
+  display: flex;
+  flex-direction: column;
+  align-items: center;     /* وسط أفقي */
+  justify-content: center; /* وسط عمودي */
+  text-align: center;
+
+  /* مساحة داخلية بدل padding السكشن */
+  padding: 48px 20px;
+  gap: 16px;
 }
+
 .cta-inner h2{
-  font-size:clamp(26px,4vw,42px);
-  font-weight:800;
-  margin-bottom:14px;
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 800;
+  margin: 0;               /* شيل أي هوامش تدز المحتوى */
 }
+
 .cta-inner p{
-  font-size:1.05rem;
-  line-height:1.6;
-  margin:0 auto 20px;
-  max-width:720px;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0;               /* لا تدزّ المحتوى */
+  max-width: 720px;
 }
+
+/* زر CTA يبقى وسط */
 .cta-btn{
-  display:inline-block;
+  display: inline-block;
+  align-self: center;
+  margin-top: 8px;
   background:#ff7f50;
   color:#fff;
   font-weight:700;
@@ -330,6 +358,7 @@ a{color:inherit; text-decoration:none}
   box-shadow:0 8px 20px rgba(255,127,80,0.3);
 }
 .cta-btn:hover{ background:#ff6d37; box-shadow:0 10px 26px rgba(255,127,80,0.4) }
+
 
 
 /* ========== News ========== */
@@ -741,22 +770,47 @@ body.bonetider-page{
 .pillar p { margin:0; font-size:14px; opacity:.9; color:#e5e7eb }
 
 /* ===== Böner & gudsdyrkan) ===== */
+/* ===== Image + Text section (prayer-grid) ===== */
 .prayer-grid{
-  display:grid; grid-template-columns:1.05fr .95fr; gap:32px; align-items:start;
+  display:grid;
+  grid-template-columns: 1.05fr .95fr;
+  grid-template-areas: "img text";   /* الصورة يسار - النص يمين (الوضع الافتراضي) */
+  gap:32px;
+  align-items:start;
 }
+
+/* أربط العناصر بالمناطق */
+.prayer-frame { grid-area: img; }
+.prayer-text  { grid-area: text; }
+
+/* لما تختار Höger (right) نقلب المناطق والأعمدة */
+.prayer-grid.img-right{
+  grid-template-columns: .95fr 1.05fr;
+  grid-template-areas: "text img";   /* النص يسار - الصورة يمين */
+}
+
+/* (اختياري) صراحةً الوضع الافتراضي */
+.prayer-grid.img-left{
+  grid-template-columns: 1.05fr .95fr;
+  grid-template-areas: "img text";
+}
+
+/* Responsive */
+@media (max-width: 900px){
+  .prayer-grid{
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "img"
+      "text";
+  }
+}
+
+/* باقي التنسيقات كما لديك */
 .prayer-frame img{ width:100%; height:auto; display:block; border-radius:10px }
 .prayer-text h2{ margin:0 0 6px; font-size:clamp(22px,3.2vw,32px) }
 .prayer-text h6{ margin:0 0 10px; font-weight:800; letter-spacing:.3px }
 .prayer-text p{ line-height:1.75; margin:0 0 12px }
 
-/* green band between sections */
-.prayer-band{
-  height:180px;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(255,255,255,.06) 0 40%, transparent 41%),
-    repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 12px, transparent 12px 24px),
-    #67b26f;
-}
 
 /* ===== Donate card  ===== */
 .donate-card{ padding:40px 0 }
@@ -1093,5 +1147,58 @@ body.bonetider-page{
   .vertical-decoration.top{ width: 360px; }
 }
 
+/* Wrapper & Card */
+.vigsel-wrap{ padding:30px 0; background:#e7f7e7; }
+.vigsel-card{ max-width:1100px; margin:0 auto; background:#f1faef; border-radius:16px; padding:28px;
+  box-shadow:0 10px 30px rgba(0,0,0,.06); border:1px solid rgba(0,0,0,.04); }
+.vigsel-title{ text-align:center; color:#2d7a2f; font-size:clamp(24px,3.8vw,42px); font-weight:800; margin:6px 0 20px; }
+
+/* Steps */
+.vigsel-steps{ display:flex; align-items:center; gap:22px; list-style:none; padding:0; margin:0 0 22px;
+  border-bottom:1px solid rgba(0,0,0,.08); }
+.vigsel-steps li{ display:flex; align-items:center; gap:8px; color:#487a49; opacity:.6; padding:8px 0; }
+.vigsel-steps li .pill{ width:28px; height:28px; display:grid; place-items:center; border:2px solid #62a664;
+  border-radius:999px; font-weight:700; background:#fff; }
+.vigsel-steps li.is-active{ opacity:1; color:#2d7a2f; }
+.vigsel-steps li.is-active .pill{ background:#eaffea; border-color:#2d7a2f; }
+.vigsel-steps .lbl{ font-size:12px; letter-spacing:.06em; }
+
+/* Grid */
+.wizard-grid{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:10px; }
+.frow{ display:flex; flex-direction:column; }
+.frow.col-1   { flex:0 0 100%; }
+.frow.col-1-2 { flex:0 0 calc(50% - 7px); }
+.frow.col-1-3 { flex:0 0 calc(33.333% - 9.5px); }
+@media (max-width: 900px){
+  .frow.col-1-2, .frow.col-1-3 { flex-basis:100%; }
+}
+
+/* Inputs */
+.frow label{ font-weight:700; color:#3a7d3c; margin-bottom:6px; }
+.frow input, .frow textarea, .frow select{
+  width:100%; padding:12px 14px; border:2px solid #cfe8cf; border-radius:10px; background:#fff;
+  outline:none; transition:.15s; }
+.frow input:focus, .frow textarea:focus, .frow select:focus{
+  border-color:#88c388; box-shadow:0 0 0 3px rgba(40,167,69,.12); }
+.checkbox{ display:flex; align-items:center; gap:10px; font-weight:700; color:#3a7d3c; }
+.req{ color:#ff7f50; margin-inline-start:4px; }
+.help{ color:#6c8b6c; font-size:.85rem; margin-top:4px; }
+.error{ color:#b00020; font-size:.85rem; margin-top:6px; }
+
+/* Buttons */
+.wizard-actions{ margin-top:12px; display:flex; justify-content:center; gap:14px; }
+.wizard-actions.between{ justify-content:space-between; }
+.btn-next, .btn-prev, .btn-submit{
+  min-width:220px; padding:13px 20px; border-radius:999px; border:0; cursor:pointer; font-weight:800; font-size:16px; transition:.2s; }
+.btn-next, .btn-submit{ background:#ff7f50; color:#fff; box-shadow:0 10px 22px rgba(255,127,80,.3); }
+.btn-next:hover, .btn-submit:hover{ background:#ff6b35; box-shadow:0 12px 26px rgba(255,127,80,.4); }
+.btn-prev{ background:#e2f4e2; color:#2d7a2f; }
+.btn-prev:hover{ background:#d2efd2; }
 
 
+.form-description {
+  margin: 1em 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #444;
+}

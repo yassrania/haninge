@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\HomeSettingResource\Pages;
 
 use App\Filament\Resources\HomeSettingResource;
-use Filament\Actions;
+use App\Models\HomeSetting;
 use Filament\Resources\Pages\ListRecords;
 
 class ListHomeSettings extends ListRecords
@@ -12,8 +12,12 @@ class ListHomeSettings extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\CreateAction::make(),
-        ];
+        return []; // لا Create
+    }
+
+    public function mount(): void
+    {
+        $record = HomeSetting::firstOrCreate(['id' => 1], []);
+        $this->redirect(HomeSettingResource::getUrl('edit', ['record' => $record]));
     }
 }

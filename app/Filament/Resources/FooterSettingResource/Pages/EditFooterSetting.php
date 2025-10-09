@@ -16,4 +16,15 @@ class EditFooterSetting extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+
+    protected function getRedirectUrl(): string
+    {
+        return static::getResource()::getUrl('edit', ['record' => $this->record]);
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
 }
