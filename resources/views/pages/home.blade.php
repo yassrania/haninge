@@ -1,35 +1,25 @@
 @extends('layouts.app')
+
 @section('title', 'Haninge Islamiska Forum — Välkommen')
 
 @section('content')
 @php
-    $home = \App\Models\HomeSetting::query()->first();
+    /** اجمع كل المتغيرات بشكل آمن + قيم افتراضية */
+    $home = $home ?? \App\Models\HomeSetting::first(); // لو ما أُرسل من الكنترولر
 
-    $slides   = is_array($home->slides ?? null) ? $home->slides : [];
-    $goals    = is_array($home->goals    ?? null) ? $home->goals    : [];
-    $pillars  = is_array($home->pillars  ?? null) ? $home->pillars  : [];
-    $services = is_array($home->services ?? null) ? $home->services : [];
+    $heroMode    = $home?->hero_mode ?? 'image_slider';
+    $slides      = is_array($home?->slides ?? null) ? ($home->slides ?? []) : [];
+    $introTitle  = $home?->intro_title  ?? ($home?->about_title ?? 'Alby moské');
+    $introAccent = $home?->intro_accent ?? 'En moské i hjärtat av Botkyrka';
 
-    $introTitle  = $home->intro_title  ?: ($home->about_title ?? 'Alby moské');
-    $introAccent = $home->intro_accent ?: 'En moské i hjärtat av Botkyrka';
+    $goals       = is_array($home?->goals ?? null) ? ($home->goals ?? []) : [];
+    $pillars     = is_array($home?->pillars ?? null) ? ($home->pillars ?? []) : [];
+    $servicesCfg = is_array($home?->services ?? null) ? ($home->services ?? []) : [];
 
-    $goalsTitle  = $home->goals_title  ?? 'Vårt mål och syfte';
-    $goalsAccent = $home->goals_accent ?? 'Stärka tro, kunskap och gemenskap';
+    $goalsTitle  = $home?->goals_title  ?? 'Vårt mål och syfte';
+    $goalsAccent = $home?->goals_accent ?? 'Stärka tro, kunskap och gemenskap';
 
-      $heroMode = $home->hero_mode ?? 'image_slider';
-
-@endphp
-
-{{-- ===== INTRO (هيدر صغير) ===== --}}
-@php
-  $heroMode = $home->hero_mode ?? 'image_slider';
-  $slides   = is_array($home->slides ?? null) ? $home->slides : [];
-@endphp
-
-{{-- ===== HERO ===== --}}
-@php
-  $heroMode = $home->hero_mode ?? 'image_slider';
-  $slides   = is_array($home->slides ?? null) ? $home->slides : [];
+    $latestNews  = isset($latestNews) ? $latestNews : collect(); // يُرسل من الكنترولر عادة
 @endphp
 
 {{-- ===== HERO ===== --}}
@@ -187,93 +177,34 @@
       <img src="{{ asset('assets/img/prayer-banner.jpg') }}" alt="Bön i moskén">
     </figure>
 
-    <div class="prayers-card">
-      <header class="prayers-card-head">
-        <h3>{{ $home->prayer_title ?? 'Bönetider i Haninge' }}</h3>
-        <small id="prayers-date">Idag</small>
-      </header>
+    {{-- بطاقة مواقيت اليوم (من قاعدة البيانات) --}}
+@php
+    // اجلب مواقيت اليوم محليًا لو لم تُمرَّر من الكنترولر
+    if (!isset($today)) {
+        $today = \App\Models\PrayerTime::whereDate('date', today())->first();
+    }
+@endphp
 
-      <table class="prayers-table">
-        <tbody id="prayers-body">
-          <tr><th>Fajr</th>    <td id="pv-fajr">—</td></tr>
-          <tr><th>Solupp</th>  <td id="pv-sunrise">—</td></tr>
-          <tr><th>Dhuhr</th>   <td id="pv-dhuhr">—</td></tr>
-          <tr><th>Asr</th>     <td id="pv-asr">—</td></tr>
-          <tr><th>Maghrib</th> <td id="pv-maghrib">—</td></tr>
-          <tr><th>Isha</th>    <td id="pv-isha">—</td></tr>
-        </tbody>
-      </table>
+<div class="prayers-card">
+  <header class="prayers-card-head">
+  </header>
 
-      @php
-        $btnT = $home->prayer_button_text ?? 'Visa månadsvis';
-        $btnU = $home->prayer_button_url  ?? '#';
-      @endphp
-      <a class="btn-month" href="{{ $btnU }}">{{ $btnT }}</a>
-    </div>
+  {{-- ويدجت اليوم الجاهز --}}
+  @include('partials.prayer-today', ['today' => $today])
+
+  @php
+    $btnT = $home->prayer_button_text ?? 'Visa månadsvis';
+    $btnU = $home->prayer_button_url  ?? route('bonetider');
+  @endphp
+  <a class="btn-month" href="{{ $btnU }}">{{ $btnT }}</a>
+</div>
+
   </div>
 </section>
 
-@push('scripts')
-<script>
-(() => {
-  // تنسيق التاريخ السويدي أعلى البطاقة
-  const dateEl = document.getElementById('prayers-date');
-  try { dateEl.textContent = new Intl.DateTimeFormat('sv-SE', { dateStyle: 'full' }).format(new Date()); }
-  catch(e){ dateEl.textContent = 'Idag'; }
 
-  // عناصر الأوقات
-  const el = {
-    fajr:    document.getElementById('pv-fajr'),
-    sunrise: document.getElementById('pv-sunrise'),
-    dhuhr:   document.getElementById('pv-dhuhr'),
-    asr:     document.getElementById('pv-asr'),
-    maghrib: document.getElementById('pv-maghrib'),
-    isha:    document.getElementById('pv-isha'),
-  };
 
-  // تحويل "HH:MM (CEST)" إلى "HH:MM"
-  const hhmm = (s) => String(s || '').split(' ')[0];
-
-  // تحميل مواقيت اليوم من AlAdhan (يعتمد على خط العرض/الطول)
-  function loadTimings(lat, lng) {
-    const ts = Math.floor(Date.now()/1000); // اليوم
-    const tz = encodeURIComponent('Europe/Stockholm');
-    // method=3 (Muslim World League) — عدلها إن لزم
-    const url = `https://api.aladhan.com/v1/timings/${ts}?latitude=${lat}&longitude=${lng}&method=3&school=0&timezonestring=${tz}`;
-    fetch(url)
-      .then(r => r.json())
-      .then(({data}) => {
-        if (!data || !data.timings) throw new Error('No timings');
-        const t = data.timings;
-
-        if (el.fajr)    el.fajr.textContent    = hhmm(t.Fajr    || t.fajr);
-        if (el.sunrise) el.sunrise.textContent = hhmm(t.Sunrise || t.sunrise);
-        if (el.dhuhr)   el.dhuhr.textContent   = hhmm(t.Dhuhr   || t.dhuhr || t.Zuhr);
-        if (el.asr)     el.asr.textContent     = hhmm(t.Asr     || t.asr);
-        if (el.maghrib) el.maghrib.textContent = hhmm(t.Maghrib || t.maghrib);
-        if (el.isha)    el.isha.textContent    = hhmm(t.Isha    || t.isha);
-      })
-      .catch(() => {
-        // لو فشل الجلب، على الأقل خلّي التاريخ موجود والباقي شرطات —
-      });
-  }
-
-  // إحداثيات احتياطية: Botkyrka/Haninge تقريبًا
-  const fallback = { lat: 59.2239, lng: 17.8390 };
-
-  // تحديد الموقع من المتصفح (ثم سقوط احتياطي)
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      pos => loadTimings(pos.coords.latitude, pos.coords.longitude),
-      ()  => loadTimings(fallback.lat, fallback.lng),
-      { timeout: 5000 }
-    );
-  } else {
-    loadTimings(fallback.lat, fallback.lng);
-  }
-})();
-</script>
-@endpush
+ 
 
 
 @php

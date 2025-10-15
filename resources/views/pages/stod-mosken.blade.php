@@ -1,64 +1,104 @@
 @extends('layouts.app')
 
-@section('title','Stöd moskén — Haninge Islamiska Forum')
+@section('title', $pageTitle ?? 'Stöd moskén')
+@section('meta_description', $pageDescription ?? '')
 
 @section('content')
 
-<!-- ===== Banner ===== -->
-<section class="page-banner" style="background-image:url('{{ asset('assets/img/om-islam-banner.jpg') }}')">
-  <div class="overlay"></div>
-  <div class="container banner-inner">
-    <h1>Stöd Haninge moskén</h1>
-    <p>Ditt stöd är nödvändigt för att vi ska kunna fortsätta vårt arbete</p>
-  </div>
-</section>
+{{-- Banner بسيط (اختياري) --}}
 
-<main class="site-main">
-  <!-- Content grid -->
-  <section class="section section-tight">
-    <div class="container support-wrap">
-      <!-- Bild -->
-      <figure class="support-photo">
-        <img src="{{ asset('assets/img/stod-moske.jpg') }}" alt="Donation / Zakat">
-      </figure>
 
-      <!-- Sidokolumn (donation info) -->
-      <aside class="support-aside tight-top">
-        <h3>Bli medlem och ge din moskéavgift idag!</h3>
-        <p>
-          Om du vill stödja din lokala moské behöver du skicka in ett skriftligt medgivande.
-        </p>
-        <ul class="support-list">
-          <li>Medgivandet gäller för hela kalenderåret</li>
-          <li>Medlemsavgiften ligger för närvarande på 1%</li>
-          <li>Beräkningen: 100 000 kr → 83 kr/månad</li>
-          <li>200 000 kr → 167 kr/månad</li>
-          <li>300 000 kr → 250 kr/månad</li>
-        </ul>
-        <a href="#" class="btn-orange">Ladda ned och fyll i blanketten</a>
-        <div class="qr">
-          <img src="{{ asset('assets/img/swish-qr.png') }}" alt="Swish QR code">
-          <p class="muted">123 277 16 24</p>
+<main class="site-main section">
+  <div class="container" style="display:grid;grid-template-columns:1fr 340px;gap:40px;">
+    <div class="support-main">
+
+      @foreach($sections as $block)
+        @if($block->type === 'image_text')
+          @php
+            $pos = $block->image_position === 'right' ? 'right' : 'left';
+            $img = $block->image_path ? Storage::url($block->image_path) : null;
+          @endphp
+          <section class="section about-grid">
+            <div class="container grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+              @if($pos==='left')
+                <figure class="frame">
+                  @if($img)<img src="{{ $img }}" alt="{{ $block->title }}">@endif
+                </figure>
+              @endif
+
+              <div>
+                @if($block->title)<h2 class="green">{{ $block->title }}</h2>@endif
+                @if($block->subtitle)<p>{{ $block->subtitle }}</p>@endif
+                @if($block->content)<div class="text">{!! $block->content !!}</div>@endif
+                @if($block->button_url)
+                  <p><a class="btn-link" href="{{ $block->button_url }}">{{ $block->button_label ?: 'Läs mer' }}</a></p>
+                @endif
+              </div>
+
+              @if($pos==='right')
+                <figure class="frame">
+                  @if($img)<img src="{{ $img }}" alt="{{ $block->title }}">@endif
+                </figure>
+              @endif
+            </div>
+          </section>
+
+        @elseif($block->type === 'image')
+          @if($block->image_path)
+          <section class="section">
+            <figure class="frame">
+              <img src="{{ Storage::url($block->image_path) }}" alt="{{ $block->title }}">
+            </figure>
+            @if($block->title)<h2 class="green" style="margin-top:12px">{{ $block->title }}</h2>@endif
+            @if($block->subtitle)<p>{{ $block->subtitle }}</p>@endif
+            @if($block->button_url)
+              <p><a class="btn-link" href="{{ $block->button_url }}">{{ $block->button_label ?: 'Läs mer' }}</a></p>
+            @endif
+          </section>
+          @endif
+
+        @elseif($block->type === 'text')
+          <section class="section">
+            @if($block->title)<h2 class="green">{{ $block->title }}</h2>@endif
+            @if($block->subtitle)<p>{{ $block->subtitle }}</p>@endif
+            @if($block->content)<div class="text">{!! $block->content !!}</div>@endif
+            @if($block->button_url)
+              <p><a class="btn-link" href="{{ $block->button_url }}">{{ $block->button_label ?: 'Läs mer' }}</a></p>
+            @endif
+          </section>
+        @endif
+      @endforeach
+
+    </div>
+
+    {{-- ================= Sidebar ================= --}}
+    <aside class="support-aside tight-top">
+      <div class="sticky" style="position:sticky;top:24px;">
+        <div class="card" style="background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:18px;">
+          @if($aside?->title)<h3 class="green">{{ $aside->title }}</h3>@endif
+          @if($aside?->body)<div class="text" style="margin-top:8px">{!! $aside->body !!}</div>@endif
+
+          @if($aside?->image_path)
+            <figure class="frame" style="margin-top:12px">
+              <img src="{{ Storage::url($aside->image_path) }}" alt="Support">
+            </figure>
+          @endif
+
+          @if($aside?->button_label && $aside?->button_url)
+            <p style="margin-top:12px">
+              <a class="btn-orange" href="{{ $aside->button_url }}">{{ $aside->button_label }}</a>
+            </p>
+          @endif
+
+          @if($aside?->extra_image_path)
+            <figure class="frame" style="margin-top:12px">
+              <img src="{{ Storage::url($aside->extra_image_path) }}" alt="Support">
+            </figure>
+          @endif
         </div>
-      </aside>
-    </div>
-
-    <!-- Text under -->
-    <div class="container support-text">
-      <h2 class="green">Vi uppskattar ditt stöd!</h2>
-      <h4 class="orange">Donera till Haninge Moské</h4>
-      <p>
-        Haninge moskén arbetar för att vi och våra barn ska ha en trygg plats för bön,
-        utbildning och gemenskap. Ditt stöd gör att vi kan fortsätta utveckla verksamheten.
-      </p>
-
-      <h2 class="green">Ditt bidrag gör skillnad!</h2>
-      <h4 class="orange">Du kan bidra på olika sätt</h4>
-      <p>Moskéns organisationsnummer är <strong>815601-0947</strong>.</p>
-      <p><strong>Swish:</strong> 123 277 16 24</p>
-      <p><strong>Bankgiro:</strong> 5233-5916</p>
-    </div>
-  </section>
+      </div>
+    </aside>
+  </div>
 </main>
 
 @endsection

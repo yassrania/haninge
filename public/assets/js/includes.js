@@ -10,28 +10,32 @@
       el.innerHTML = html;
 
       // فعّل أي <script> داخل الجزئية
-      el.querySelectorAll('script').forEach(s=>{
-        const ns = document.createElement('script');
-        [...s.attributes].forEach(a=>ns.setAttribute(a.name,a.value));
-        ns.textContent = s.textContent;
-        s.replaceWith(ns);
-      });
-    }catch(e){ console.error('Include failed:', path, e); }
-  };
+     // داخل loadOne في includes.js — استبدل كتلة تفعيل السكربتات بهذه:
+el.querySelectorAll('script').forEach(s => {
+  const src = (s.getAttribute('src') || '').toLowerCase();
 
-  // حمّل كل العناصر اللي فيها data-include
-  const targets = document.querySelectorAll('[data-include]');
-  for(const t of targets){ await loadOne(t); }
+  // لا تعِد تحميل سكربتات تسبب تضارباً
+  const blacklist = ['alpine', 'livewire', 'filament', 'utils.js', 'includes.js', 'main.js'];
+  if (src && blacklist.some(k => src.includes(k))) return;
 
-  // مثال: سنة الفوتر
-  const setYear = () => {
-    const y = document.getElementById('year');
-    if(y) y.textContent = new Date().getFullYear();
-  };
-  // جرّب تعيينها الآن وبعد إدراج الفوتر
-  setYear();
-  setTimeout(setYear, 100);
-})();
+  // امنع السكربتات الخارجية (CDN) من الإعادة
+  if (src) {
+    try {
+      const u = new URL(src, location.href);
+      if (u.origin !== location.origin) return;
+    } catch (_) { /* ignore */ }
+  }
+
+  const ns = document.createElement('script');
+  [...s.attributes].forEach(a => ns.setAttribute(a.name, a.value));
+
+  // إن كان type="module" قد يكسر صفحاتك، أزله
+  if (ns.type === 'module') ns.removeAttribute('type');
+
+  ns.textContent = s.textContent;
+  s.replaceWith(ns);
+});
+
 
 document.addEventListener('DOMContentLoaded', ()=>{
   document.querySelectorAll('.has-submenu > .submenu-toggle').forEach(link=>{

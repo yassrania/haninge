@@ -1,7 +1,4 @@
-
-<x-filament::page>
-  <form wire:submit.prevent="save" class="space-y-4">
+{{-- resources/views/filament/pages/site-settings.blade.php --}}
+<x-filament-panels::page>
     {{ $this->form }}
-    <x-filament::button type="submit">Spara</x-filament::button>
-  </form>
-</x-filament::page>
+</x-filament-panels::page>

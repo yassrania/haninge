@@ -11,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Filament\Actions;
 use Illuminate\Support\Facades\Storage;
+use Filament\Notifications\Notification;
 
 class SiteSettings extends Page
 {
@@ -30,9 +31,9 @@ class SiteSettings extends Page
 
     public function mount(): void
     {
-        // إنشاء سجل واحد إذا ماكانش
+        // إنشاء سجل واحد إذا لم يوجد
         $this->record = Setting::firstOrCreate([]);
-        // عبّي الفورم
+        // تعبئة الفورم
         $this->form->fill($this->record->toArray());
     }
 
@@ -41,16 +42,16 @@ class SiteSettings extends Page
         return $form
             ->schema([
                 TextInput::make('site_name')->label('Sidnamn')->required(),
-           FileUpload::make('logo')
-  ->label('Logotyp')
-    ->disk('public')
-    ->directory('settings')
-    ->image()
-   ->maxSize(4096) // 4MB
-    ->acceptedFileTypes(['image/png','image/jpeg','image/webp','image/svg+xml'])
-    ->openable()
-    ->downloadable()
-    ->deletable(true),
+                FileUpload::make('logo')
+                    ->label('Logotyp')
+                    ->disk('public')
+                    ->directory('settings')
+                    ->image()
+                    ->maxSize(4096) // 4MB
+                    ->acceptedFileTypes(['image/png','image/jpeg','image/webp','image/svg+xml'])
+                    ->openable()
+                    ->downloadable()
+                    ->deletable(true),
                 TextInput::make('email')->label('E-post'),
                 TextInput::make('phone')->label('Telefon'),
                 TextInput::make('address')->label('Adress'),
@@ -59,30 +60,46 @@ class SiteSettings extends Page
             ->statePath('data');
     }
 
-    public function getHeaderActions(): array
-    {
-        return [
-            Actions\Action::make('clearLogo')
-                ->label('Rensa logotyp')
-                ->color('danger')
-                ->icon('heroicon-o-trash')
-                ->requiresConfirmation()
-                ->visible(fn () => filled($this->record->logo))
-                ->action(function () {
-                    if ($this->record->logo) {
-                        Storage::disk('public')->delete($this->record->logo);
-                        $this->record->logo = null;
-                        $this->record->save();
-                        $this->form->fill($this->record->toArray());
-                    }
-                    $this->notify('success', 'Logotyp raderades.');
-                }),
-        ];
-    }
+public function getHeaderActions(): array
+{
+    return [
+        Actions\Action::make('clearLogo')
+            ->label('Rensa logotyp')
+            ->color('danger')
+            ->icon('heroicon-o-trash')
+            ->requiresConfirmation()
+            ->visible(fn () => filled($this->record->logo))
+            ->action(function () {
+                if ($this->record->logo) {
+                    Storage::disk('public')->delete($this->record->logo);
+                    $this->record->logo = null;
+                    $this->record->save();
+                    $this->form->fill($this->record->toArray());
 
-    public function save(): void
-    {
-        $this->record->update($this->form->getState());
-        $this->notify('success', 'Inställningarna har sparats.');
-    }
+                    // امسح كاش الإعدادات
+                    cache()->forget('site_settings');
+                }
+
+                Notification::make()
+                    ->title('Logotyp raderades.')
+                    ->success()
+                    ->send();
+            }),
+    ];
 }
+
+public function save(): void
+{
+    $this->record->update($this->form->getState());
+
+    // امسح كاش الإعدادات عشان تنعكس مباشرة
+    cache()->forget('site_settings');
+
+    Notification::make()
+        ->title('Inställningarna har sparats.')
+        ->success()
+        ->send();
+
+        }
+         }
+

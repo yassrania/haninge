@@ -1,179 +1,234 @@
 @extends('layouts.app')
-
 @section('title','Bönetider — Haninge Islamiska Forum')
 
 @section('content')
+@php
+    // إدخال الشهر/السنة الافتراضيين
+    $year  = isset($year)  ? (int) $year  : now()->year;
+    $month = isset($month) ? (int) $month : now()->month;
 
-<!-- ===== Bönetider Arch ===== -->
-<section class="bonetider">
-  <div class="arch-wrap container">
-    <div class="arch-card">
-      <div class="arch-head">
-        <div class="brand">
-          <img src="{{ asset('assets/img/logo-mark-gold.svg') }}" alt="Haninge Islamiska Forum" style="width:54px">
+    // تواريخ التنقّل
+    $cur  = \Illuminate\Support\Carbon::create($year, $month, 1)->locale('sv');
+    $prev = (clone $cur)->subMonth();
+    $next = (clone $cur)->addMonth();
+
+    $monthName = ucfirst($cur->translatedFormat('F'));
+
+    use Illuminate\Support\Carbon;
+
+    // فورمات التاريخ
+    $formatDate = function ($d) {
+        $c = $d instanceof Carbon ? $d : Carbon::parse($d);
+        $c->locale('sv');
+        return $c->translatedFormat('j F, Y');
+    };
+
+    // تنسيق وقت مختصر
+    $val = fn($t) => $t ? e($t) : '--:--';
+@endphp
+
+<style>
+  /* ===== A4 print setup ===== */
+  @page { size: A4 portrait; margin: 12mm; }
+  html, body { height: 100%; background:#fff; }
+
+  /* Buttons/filters should not print */
+  @media print { .no-print { display: none !important; } }
+
+  /* Keep the monthly table on one page */
+  @media print {
+    .calendar-a4, .calendar-a4 table { page-break-inside: avoid; }
+  }
+
+  /* ===== Golden frame background wrapper ===== */
+  .calendar-a4-wrap { display:flex; justify-content:center; }
+  .calendar-a4 {
+    width: 210mm;                 /* A4 width */
+    min-height: 297mm;            /* A4 height */
+    position: relative;
+    padding: 28mm 16mm 16mm;      /* move table inside the arch */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: transparent;
+    margin: 0 auto;
+  }
+  .calendar-a4::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: url("{{ asset('img/bonetider-frame.png') }}") no-repeat center top;
+    background-size: contain;     /* show full frame */
+    z-index: 0;
+  }
+  .calendar-a4 > * { position: relative; z-index: 1; }
+
+  /* ===== Monthly table styling ===== */
+  .bonetider-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11pt;              /* adjust if it overflows */
+    background: transparent;
+  }
+  .bonetider-table th, .bonetider-table td {
+    padding: 6px 8px;
+    border: 1px solid #b8b8b8;
+    text-align: center;
+  }
+  .bonetider-table thead th {
+    background: #f6f6f6;
+  }
+  .monthly-row { cursor: pointer; }
+  .monthly-row:hover { background-color: rgba(0,0,0,.03); }
+
+  /* Daily card is great on screen, but we’ll hide it on print so the A4 is clean */
+  @media print { .daily-card { display: none !important; } }
+</style>
+
+<section class="container py-4">
+  {{-- رأس الصفحة والتنقّل --}}
+  <div class="d-flex align-items-center justify-content-between mb-3 no-print">
+    <h1 class="h4 m-0">Bönetider – {{ ucfirst($monthName) }} {{ $cur->year }}</h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary"
+         href="{{ route('bonetider', ['year' => $prev->year, 'month' => $prev->month]) }}">‹ Föregående</a>
+      <a class="btn btn-outline-secondary"
+         href="{{ route('bonetider', ['year' => now()->year, 'month' => now()->month]) }}">Idag</a>
+      <a class="btn btn-outline-secondary"
+         href="{{ route('bonetider', ['year' => $next->year, 'month' => $next->month]) }}">Nästa ›</a>
+      <button type="button" class="btn btn-primary" onclick="window.print()">Skriv ut</button>
+    </div>
+  </div>
+
+  {{-- نموذج اختيار سريع --}}
+  <form class="row g-2 mb-4 no-print" method="get" action="{{ route('bonetider') }}">
+    <div class="col-auto">
+      <label class="form-label">Månad</label>
+      <select name="month" class="form-select">
+        @for ($m = 1; $m <= 12; $m++)
+          @php $mName = \Illuminate\Support\Carbon::create($cur->year, $m, 1)->locale('sv')->translatedFormat('F'); @endphp
+          <option value="{{ $m }}" @selected($m === (int) $cur->month)>{{ ucfirst($mName) }}</option>
+        @endfor
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label">År</label>
+      <input type="number" class="form-control" name="year" value="{{ (int) $cur->year }}" min="2020" max="2100">
+    </div>
+    <div class="col-auto align-self-end">
+      <button class="btn btn-primary">Visa</button>
+    </div>
+  </form>
+
+  <div class="row g-4">
+    {{-- اليسار: الشهر (داخل الإطار الذهبي) --}}
+    <div class="col-12 col-lg-8">
+      <div class="calendar-a4-wrap">
+        <div class="calendar-a4">
+          <h2 class="h5 text-center mb-2" style="font-weight:700;">
+            {{ ucfirst($monthName) }} {{ $cur->year }}
+          </h2>
+
+          <table class="bonetider-table" aria-label="Månatliga bönetider">
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Fajr</th>
+                <th>Soluppgång</th>
+                <th>Dhuhr</th>
+                <th>Asr</th>
+                <th>Maghrib</th>
+                <th>Isha</th>
+              </tr>
+            </thead>
+            <tbody>
+            @forelse($records as $r)
+              @php $dateStr = $formatDate($r->date); @endphp
+              <tr class="monthly-row"
+                  role="button"
+                  tabindex="0"
+                  data-date="{{ $dateStr }}"
+                  data-fajr="{{ $val($r->fajr) }}"
+                  data-sunrise="{{ $val($r->sunrise) }}"
+                  data-dhuhr="{{ $val($r->dhuhr) }}"
+                  data-asr="{{ $val($r->asr) }}"
+                  data-maghrib="{{ $val($r->maghrib) }}"
+                  data-isha="{{ $val($r->isha) }}">
+                <td>{{ $dateStr }}</td>
+                <td>{{ $val($r->fajr) }}</td>
+                <td>{{ $val($r->sunrise) }}</td>
+                <td>{{ $val($r->dhuhr) }}</td>
+                <td>{{ $val($r->asr) }}</td>
+                <td>{{ $val($r->maghrib) }}</td>
+                <td>{{ $val($r->isha) }}</td>
+              </tr>
+            @empty
+              <tr>
+                <td colspan="7" class="text-muted">Inga tider hittades för denna månad.</td>
+              </tr>
+            @endforelse
+            </tbody>
+          </table>
+
+          {{-- نصيحة الطباعة --}}
+          <p class="text-center text-muted mt-2 no-print" style="font-size:12px;">
+            Aktivera <em>Background graphics</em> / <em>Bakgrundsbilder</em> i utskriftsdialogen för att skriva ut den gyllene ramen.
+          </p>
         </div>
-        <div class="title">
-          <h2>Bönetider</h2>
-          <h1 id="monthTitle">—</h1>
+      </div>
+    </div>
+
+    {{-- اليمين: بطاقة يومية (مخفية في الطباعة) --}}
+    <div class="col-12 col-lg-4 daily-card">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <strong>Idag</strong>
         </div>
-        <div style="width:54px"></div>
-      </div>
+        <div class="card-body">
+          @php
+            $todayRec = $records->firstWhere('date', $cur->copy()->day(1)); // placeholder; اضبطها حسب بياناتك
+          @endphp
 
-      <!-- Kontroller -->
-      <div class="controls" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:8px 0 6px">
-        <label>Stad/Plats:
-          <input id="place" type="text" placeholder="Botkyrka" style="padding:8px;border:1px solid #ccc;border-radius:8px">
-        </label>
-        <label>Lat:
-          <input id="lat" type="number" step="0.000001" style="width:120px;padding:8px;border:1px solid #ccc;border-radius:8px">
-        </label>
-        <label>Lng:
-          <input id="lng" type="number" step="0.000001" style="width:120px;padding:8px;border:1px solid #ccc;border-radius:8px">
-        </label>
-        <label>Månad:
-          <select id="month" style="padding:8px;border-radius:8px">
-            <option value="1">januari</option><option value="2">februari</option><option value="3">mars</option>
-            <option value="4">april</option><option value="5">maj</option><option value="6">juni</option>
-            <option value="7">juli</option><option value="8">augusti</option><option value="9">september</option>
-            <option value="10">oktober</option><option value="11">november</option><option value="12">december</option>
-          </select>
-        </label>
-        <label>År:
-          <input id="year" type="number" min="2000" max="2100" style="width:92px;padding:8px;border:1px solid #ccc;border-radius:8px">
-        </label>
-        <label>Metod:
-          <select id="method" title="Beräkningsmetod" style="padding:8px;border-radius:8px">
-            <option value="3">Muslim World League</option>
-            <option value="2">ISNA</option>
-            <option value="5">Egyptian General Authority</option>
-            <option value="12">Umm Al-Qura</option>
-            <option value="13">Gulf (Dubai)</option>
-            <option value="14">Qatar</option>
-            <option value="1">University of Islamic Sciences, Karachi</option>
-            <option value="99">Custom (API default)</option>
-          </select>
-        </label>
-        <button id="useGeo" type="button" style="padding:10px 12px;border:0;border-radius:8px;background:#15803d;color:#fff;font-weight:700;cursor:pointer">Använd min plats</button>
-        <button id="load" type="button" style="padding:10px 12px;border:0;border-radius:8px;background:#ea7e40;color:#fff;font-weight:800;cursor:pointer">Ladda tider</button>
-      </div>
+          <div class="mb-3">
+            <div class="fw-bold" id="daily-date">{{ $formatDate(now()) }}</div>
+          </div>
 
-      <!-- Tabell -->
-      <div style="overflow:auto; max-height:65vh">
-        <table class="times" id="timesTable" style="width:100%;border-collapse:collapse;color:#f8fafc">
-          <thead>
-            <tr>
-              <th>Datum</th>
-              <th class="c">Dag</th>
-              <th class="r">Fajr</th>
-              <th class="r">Shuruk</th>
-              <th class="r">Dhuhr</th>
-              <th class="r">Asr</th>
-              <th class="r">Maghrib</th>
-              <th class="r">Isha</th>
-            </tr>
-          </thead>
-          <tbody id="timesBody">
-            <tr><td colspan="8" style="padding:12px">Laddar…</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="print-bar" style="display:flex;justify-content:flex-end;margin-top:10px">
-        <button class="btn-print" onclick="window.print()" style="background:#ea7e40;color:#fff;padding:10px 14px;border-radius:10px;border:0;font-weight:800;cursor:pointer">Skriv ut</button>
+          <dl class="row mb-0">
+            <dt class="col-6">Fajr</dt>      <dd class="col-6" id="daily-fajr">{{ $todayRec ? $val($todayRec->fajr) : '--:--' }}</dd>
+            <dt class="col-6">Soluppgång</dt><dd class="col-6" id="daily-sunrise">{{ $todayRec ? $val($todayRec->sunrise) : '--:--' }}</dd>
+            <dt class="col-6">Dhuhr</dt>     <dd class="col-6" id="daily-dhuhr">{{ $todayRec ? $val($todayRec->dhuhr) : '--:--' }}</dd>
+            <dt class="col-6">Asr</dt>       <dd class="col-6" id="daily-asr">{{ $todayRec ? $val($todayRec->asr) : '--:--' }}</dd>
+            <dt class="col-6">Maghrib</dt>   <dd class="col-6" id="daily-maghrib">{{ $todayRec ? $val($todayRec->maghrib) : '--:--' }}</dd>
+            <dt class="col-6">Isha</dt>      <dd class="col-6" id="daily-isha">{{ $todayRec ? $val($todayRec->isha) : '--:--' }}</dd>
+          </dl>
+        </div>
+        <div class="card-footer text-muted small">
+          Klicka på en rad i månadslistan för att uppdatera dagliga tider.
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-@endsection
-
-@push('scripts')
+{{-- تفاعل: اختيار صف شهري يحدّث بطاقة اليوم --}}
 <script>
-/* ===== Hämta bönetider via AlAdhan API ===== */
-(function(){
-  const body = document.getElementById('timesBody');
-  const titleEl = document.getElementById('monthTitle');
-  const place = document.getElementById('place');
-  const lat = document.getElementById('lat');
-  const lng = document.getElementById('lng');
-  const month = document.getElementById('month');
-  const year = document.getElementById('year');
-  const method = document.getElementById('method');
-  const btnGeo = document.getElementById('useGeo');
-  const btnLoad = document.getElementById('load');
+  document.addEventListener('DOMContentLoaded', function () {
+    const rows = document.querySelectorAll('.monthly-row');
+    const setDaily = (tr) => {
+      if (!tr) return;
+      document.getElementById('daily-date')?.textContent   = tr.dataset.date || '';
+      document.getElementById('daily-fajr')?.textContent    = tr.dataset.fajr || '--:--';
+      document.getElementById('daily-sunrise')?.textContent = tr.dataset.sunrise || '--:--';
+      document.getElementById('daily-dhuhr')?.textContent   = tr.dataset.dhuhr || '--:--';
+      document.getElementById('daily-asr')?.textContent     = tr.dataset.asr || '--:--';
+      document.getElementById('daily-maghrib')?.textContent = tr.dataset.maghrib || '--:--';
+      document.getElementById('daily-isha')?.textContent    = tr.dataset.isha || '--:--';
+    };
 
-  const today = new Date();
-  place.value = 'Botkyrka';
-  lat.value = 59.239;
-  lng.value = 17.825;
-  month.value = (today.getMonth()+1);
-  year.value = today.getFullYear();
-
-  const WEEK = ['sön','mån','tis','ons','tor','fre','lör'];
-  const MONTHS_SV = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
-
-  function fmt(t){
-    if(!t) return '—';
-    const m = t.match(/^(\d{1,2}):(\d{2})/);
-    return m ? (m[1].padStart(2,'0')+':'+m[2]) : t;
-  }
-
-  async function loadTimes(){
-    const m = parseInt(month.value,10);
-    const y = parseInt(year.value,10);
-    const la = parseFloat(lat.value);
-    const lo = parseFloat(lng.value);
-    const meth = parseInt(method.value,10);
-
-    titleEl.textContent = `${MONTHS_SV[m-1]} ${y}`;
-    body.innerHTML = `<tr><td colspan="8" style="padding:12px">Laddar…</td></tr>`;
-
-    try{
-      const url = `https://api.aladhan.com/v1/calendar?latitude=${la}&longitude=${lo}&method=${meth}&month=${m}&year=${y}&school=0`;
-      const res = await fetch(url);
-      const json = await res.json();
-      const data = json.data || [];
-
-      if(!data.length){
-        body.innerHTML = `<tr><td colspan="8" style="padding:12px">Inga tider hittades.</td></tr>`;
-        return;
-      }
-
-      const rows = data.map(d=>{
-        const greg = d.date.gregorian;
-        const wd = new Date(greg.date.split('-').reverse().join('-')).getDay();
-        const t = d.timings;
-        return `<tr>
-          <th>${parseInt(greg.day,10)} ${MONTHS_SV[m-1].slice(0,3)}</th>
-          <td class="c">${WEEK[wd]}</td>
-          <td class="r">${fmt(t.Fajr)}</td>
-          <td class="r">${fmt(t.Sunrise)}</td>
-          <td class="r">${fmt(t.Dhuhr)}</td>
-          <td class="r">${fmt(t.Asr)}</td>
-          <td class="r">${fmt(t.Maghrib)}</td>
-          <td class="r">${fmt(t.Isha)}</td>
-        </tr>`;
-      }).join('');
-      body.innerHTML = rows;
-    }catch(e){
-      console.error(e);
-      body.innerHTML = `<tr><td colspan="8" style="padding:12px;color:#fca5a5">Fel vid hämtning av tider.</td></tr>`;
-    }
-  }
-
-  btnGeo.addEventListener('click', ()=>{
-    if(!navigator.geolocation){
-      alert('Geolocation stöds inte i den här webbläsaren.');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      pos => { lat.value = pos.coords.latitude.toFixed(6); lng.value = pos.coords.longitude.toFixed(6); place.value='Min plats'; loadTimes(); },
-      err => { alert('Kunde inte hämta plats. Tillåt platsåtkomst eller skriv lat/lng manuellt.'); }
-    );
+    rows.forEach(tr => {
+      tr.addEventListener('click', () => setDaily(tr));
+      tr.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDaily(tr); }
+      });
+    });
   });
-
-  btnLoad.addEventListener('click', loadTimes);
-  loadTimes();
-})();
 </script>
-@endpush
+@endsection

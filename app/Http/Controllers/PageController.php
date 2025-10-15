@@ -14,6 +14,12 @@ use App\Models\OmMoskenSection;
 use App\Models\OmMoskenDonate;
 use App\Models\Nyhet;
 use App\Models\NyheterSetting;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use App\Models\ContactMessage;
+use App\Models\StodMoskenSection;
+use App\Models\StodMoskenAside;
+
 
 class PageController extends Controller
 {
@@ -156,14 +162,64 @@ public function nyheterShow(Nyhet $nyhet): \Illuminate\View\View
     {
         return view('pages.kontakt');
     }
+    public function kontaktSubmit(Request $request): RedirectResponse
+{
+    // Honey-pot بسيط لمكافحة السبام
+    if ($request->filled('website')) {
+        return back()->withInput()->with('error', 'Ogiltig begäran.');
+    }
+
+    $data = $request->validate([
+        'namn'        => ['required','string','max:120'],
+        'email'       => ['required','email','max:190'],
+        'telefon'     => ['nullable','string','max:50'],
+        'amne'        => ['nullable','string','max:190'],
+        'meddelande'  => ['required','string','max:8000'],
+        'gdpr'        => ['accepted'],
+    ], [], [
+        'namn'       => 'namn',
+        'email'      => 'e-post',
+        'telefon'    => 'telefon',
+        'amne'       => 'ämne',
+        'meddelande' => 'meddelande',
+        'gdpr'       => 'GDPR',
+    ]);
+
+    ContactMessage::create([
+        'name'        => $data['namn'],
+        'email'       => $data['email'],
+        'phone'       => $data['telefon'] ?? null,
+        'subject'     => $data['amne'] ?? null,
+        'message'     => $data['meddelande'],
+        'consent_at'  => now(),
+        'ip'          => $request->ip(),
+        'user_agent'  => substr((string) $request->userAgent(), 0, 255),
+        'read_at'     => null,
+    ]);
+
+    return back()->with('ok', 'Tack! Ditt meddelande har skickats.');
+}
 
     /**
      * /stod-mosken — صفحة ثابتة للدعم
      */
-    public function stodMosken(): View
-    {
-        return view('pages.stod-mosken');
-    }
+   public function stodMosken(): \Illuminate\View\View
+{
+    $sections = Cache::remember('stod_mosken_sections', 60, fn () =>
+        StodMoskenSection::where('published', true)->orderBy('sort')->get()
+    );
+
+    $aside = Cache::remember('stod_mosken_aside', 60, fn () =>
+        StodMoskenAside::first()
+    );
+
+    return view('pages.stod-mosken', [
+        'sections'  => $sections,
+        'aside'     => $aside,
+        'pageTitle' => 'Stöd moskén',
+        'pageDescription' => 'Stöd Haninge Islamiska Forum.',
+    ]);
+}
 
     /**
      * نسخة بديلة لعرض صفحة tjänster باستخدام إعدادات الصفحة العامة

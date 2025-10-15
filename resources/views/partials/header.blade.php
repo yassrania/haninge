@@ -24,77 +24,62 @@
     };
 @endphp
 
-<header class="site-header">
-  <div class="container header-inner">
-    <a class="logo" href="{{ route('home') }}">
-      <img src="{{ asset('assets/img/logo.svg') }}" alt="Haninge Islamiska Forum" />
-    </a>
+<header class="site-header border-bottom">
+  <div class="container py-2">
+    <div class="row align-items-center g-3 flex-nowrap flex-md-wrap">
 
-    <nav class="nav" aria-label="Huvudnavigation">
-      <button class="nav-toggle" aria-controls="site-menu" aria-expanded="false">
-        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
-        <span class="sr-only">Meny</span>
-      </button>
-
-      <ul id="site-menu" class="menu">
-        @foreach ($tops as $item)
-          @if($item->children->count())
-            <li class="has-submenu {{ $item->children->contains(fn($c) => $isActive($c)) ? 'open' : '' }}">
-              <a href="{{ $urlFor($item) }}"
-                 class="submenu-toggle"
-                 aria-haspopup="true"
-                 aria-expanded="{{ $item->children->contains(fn($c) => $isActive($c)) ? 'true' : 'false' }}">
-                {{ $item->label }}
-              </a>
-
-              <ul class="submenu" aria-label="Undermeny — {{ $item->label }}">
-                @foreach ($item->children as $child)
-                  <li>
-                    <a href="{{ $urlFor($child) }}"
-                       @if($child->new_tab) target="_blank" rel="noopener" @endif
-                       class="{{ $child->type === 'cta' ? 'btn btn-small btn-orange' : '' }} {{ $isActive($child) ? 'is-active' : '' }}">
-                      {{ $child->label }}
-                    </a>
-                  </li>
-                @endforeach
-              </ul>
-            </li>
+      {{-- Logo (يسار على الديسكتوب – أعلى في الموبايل) --}}
+      <div class="col-auto order-1 order-md-1">
+        <a href="{{ url('/') }}" class="d-inline-flex align-items-center text-decoration-none">
+          @if($site?->logo)
+            <img src="{{ Storage::url($site->logo) }}"
+                 alt="{{ $site->site_name ?? 'Logo' }}"
+                 class="site-logo">
           @else
-            <li>
-              <a href="{{ $urlFor($item) }}"
-                 @if($item->new_tab) target="_blank" rel="noopener" @endif
-                 class="{{ $item->type === 'cta' ? 'btn btn-small btn-orange' : '' }} {{ $isActive($item) ? 'is-active' : '' }}">
-                {{ $item->label }}
-              </a>
-            </li>
+            <span class="fw-bold fs-4 text-dark">{{ $site->site_name ?? 'Haninge Islamiska Forum' }}</span>
           @endif
-        @endforeach
-      </ul>
-    </nav>
+        </a>
+      </div>
+
+      {{-- Contact (وسط على الديسكتوب – تحت اللوجو في الموبايل) --}}
+      <div class="col order-3 order-md-2">
+        <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-md-center gap-3 contact-wrap">
+
+          @if($site?->phone)
+            <a class="d-inline-flex align-items-center text-decoration-none text-dark"
+               href="tel:{{ preg_replace('/\s+/', '', $site->phone) }}">
+              <i class="fa fa-phone me-2"></i>
+              <span class="small fw-semibold">{{ $site->phone }}</span>
+            </a>
+          @endif
+
+          @if($site?->email)
+            <a class="d-inline-flex align-items-center text-decoration-none text-dark"
+               href="mailto:{{ $site->email }}">
+              <i class="fa fa-envelope me-2"></i>
+              <span class="small fw-semibold">{{ $site->email }}</span>
+            </a>
+          @endif
+
+        </div>
+      </div>
+
+      {{-- Social (يمين على الديسكتوب – أسفل في الموبايل) --}}
+      <div class="col-auto order-2 order-md-3 ms-auto">
+        @if(is_array($site?->social))
+          <div class="d-flex align-items-center gap-3">
+            @foreach($site->social as $network => $url)
+              @if(!empty($url))
+                <a href="{{ $url }}" target="_blank" rel="noopener"
+                   class="text-dark social-link" title="{{ ucfirst($network) }}">
+                  <i class="fab fa-{{ strtolower($network) }}"></i>
+                </a>
+              @endif
+            @endforeach
+          </div>
+        @endif
+      </div>
+
+    </div>
   </div>
-
-  {{-- نفس سكريبت التحكم القديم --}}
-  <script>
-    (function(){
-      const qs=(s,c=document)=>c.querySelector(s);
-      const qsa=(s,c=document)=>Array.from(c.querySelectorAll(s));
-      const navToggle = qs('.nav-toggle');
-      const menu = qs('#site-menu');
-
-      if(navToggle && menu){
-        navToggle.addEventListener('click', ()=>{
-          const open = menu.classList.toggle('open');
-          navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-      }
-      qsa('.has-submenu').forEach(li=>{
-        const toggle = qs('.submenu-toggle', li);
-        li.addEventListener('mouseenter', ()=>{ if (innerWidth>980){ li.classList.add('open'); toggle?.setAttribute('aria-expanded','true'); }});
-        li.addEventListener('mouseleave', ()=>{ if (innerWidth>980){ li.classList.remove('open'); toggle?.setAttribute('aria-expanded','false'); }});
-        toggle && toggle.addEventListener('click', (e)=>{
-          if(innerWidth<=980){ e.preventDefault(); const isOpen = li.classList.toggle('open'); toggle.setAttribute('aria-expanded', isOpen?'true':'false'); }
-        });
-      });
-    })();
-  </script>
 </header>
