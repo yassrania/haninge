@@ -1,9 +1,32 @@
 <?php return array (
+  'anhskohbo/no-captcha' => 
+  array (
+    'aliases' => 
+    array (
+      'NoCaptcha' => 'Anhskohbo\\NoCaptcha\\Facades\\NoCaptcha',
+    ),
+    'providers' => 
+    array (
+      0 => 'Anhskohbo\\NoCaptcha\\NoCaptchaServiceProvider',
+    ),
+  ),
   'anourvalar/eloquent-serialize' => 
   array (
     'aliases' => 
     array (
       'EloquentSerialize' => 'AnourValar\\EloquentSerialize\\Facades\\EloquentSerializeFacade',
+    ),
+  ),
+  'barryvdh/laravel-dompdf' => 
+  array (
+    'aliases' => 
+    array (
+      'PDF' => 'Barryvdh\\DomPDF\\Facade\\Pdf',
+      'Pdf' => 'Barryvdh\\DomPDF\\Facade\\Pdf',
+    ),
+    'providers' => 
+    array (
+      0 => 'Barryvdh\\DomPDF\\ServiceProvider',
     ),
   ),
   'blade-ui-kit/blade-heroicons' => 

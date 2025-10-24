@@ -19,6 +19,8 @@ use Illuminate\Http\Request;
 use App\Models\ContactMessage;
 use App\Models\StodMoskenSection;
 use App\Models\StodMoskenAside;
+use Illuminate\Support\Facades\Schema;
+
 
 
 class PageController extends Controller
@@ -45,27 +47,26 @@ class PageController extends Controller
      * /tjanster — صفحة اللائحة/التجميع
      * (تعرض جميع الخدمات المنشورة مع بعض الحقول)
      */
-    public function tjansterIndex(): View
+     public function tjansterIndex()
     {
-        $services = Service::query()
-            ->where('published', true)
-            ->orderBy('title')
-            ->get(['title', 'subtitle', 'slug', 'page_banner']);
+        $table = (new Service)->getTable();
 
+        $services = Service::query()
+            ->when(Schema::hasColumn($table, 'is_active'), fn($q) => $q->where('is_active', 1))
+            ->when(Schema::hasColumn($table, 'published'),  fn($q) => $q->where('published', 1))
+            ->orderBy(Schema::hasColumn($table, 'order') ? 'order' : 'id')
+            ->get();
+
+        // عندك صفحة الفهرس في resources/views/pages/tjanster.blade.php
         return view('pages.tjanster', compact('services'));
     }
 
-    /**
-     * /tjanster/{service:slug} — صفحة خدمة مفردة
-     * إن وُجد قالب مخصّص داخل resources/views/services/{slug}.blade.php
-     * يمكنك في الـBlade استخدام includeIf إن رغبت.
-     */
-    public function tjansterShow(Service $service): View
-    {
-        $pillars = (array) optional(HomeSetting::first())->pillars ?? [];
-        return view('services.show', compact('service', 'pillars'));
-    }
-
+    /** GET /tjanster/{slug} */
+   public function tjansterShow(string $slug)
+{
+    $service = Service::where('slug', $slug)->firstOrFail();
+    return view('services.show', compact('service'));
+}
     /**
      * /bonetider — صفحة ثابتة
      */

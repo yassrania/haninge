@@ -3,33 +3,34 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Models\Setting;
 use Illuminate\Support\Facades\View;
-use App\Models\FooterSetting;
-use App\Models\FooterLinkGroup;
+use Illuminate\Support\Facades\Schema;
+use App\Models\Menu;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
- public function boot(): void
-{
-    View::composer(['layouts.*', 'partials.*', '*'], function ($view) {
-        // اختر الموديل الصحيح لديك: Setting أو FooterSetting
-        $view->with('site', \App\Models\Setting::first()); 
-        // لو تستخدم FooterSetting:
-        // $view->with('site', \App\Models\FooterSetting::first());
-    });
-}
+    public function boot(): void
+    {
+        // Share menu tree with header (and other layout views if needed)
+        View::composer(['layouts.header', 'layouts.*', 'partials.*', 'header'], function ($view) {
+            // Prefer `order` if present
+            $orderCol = Schema::hasColumn('menus', 'order') ? 'order' : 'id';
 
-}
+            $menuTree = Menu::query()
+                ->whereNull('parent_id')
+                ->active()
+                ->with(['children' => function ($q) use ($orderCol) {
+                    $q->active()->orderBy($orderCol);
+                }])
+                ->orderBy($orderCol)
+                ->get();
 
+            $view->with('menuTree', $menuTree);
+        });
+    }
+}
