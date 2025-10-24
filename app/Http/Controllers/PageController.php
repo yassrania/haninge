@@ -20,6 +20,8 @@ use App\Models\ContactMessage;
 use App\Models\StodMoskenSection;
 use App\Models\StodMoskenAside;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Archive;
+
 
 
 
@@ -231,5 +233,23 @@ public function nyheterShow(Nyhet $nyhet): \Illuminate\View\View
         $page = ServicesPageSetting::first();
         return view('pages.tjanster', compact('page'));
     }
+
+    public function arkivIndex()
+{
+    $archives = Archive::query()
+        ->when(Schema::hasColumn('archives','is_active'), fn($q)=>$q->where('is_active', 1))
+        ->orderByRaw(Schema::hasColumn('archives','event_date') ? 'event_date desc, id desc' : 'id desc')
+        ->paginate(12);
+
+    return view('pages.arkiv', compact('archives'));
+}
+
+public function arkivShow(Archive $archive)
+{
+    if (Schema::hasColumn('archives','is_active') && !$archive->is_active) {
+        abort(404);
+    }
+    return view('pages.arkiv-show', compact('archive'));
+}
 }
 

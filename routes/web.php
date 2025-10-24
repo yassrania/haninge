@@ -72,3 +72,13 @@ Route::get('/print/membership-applications/{id}', [MembershipApplicationControll
 Route::post('/membership/send-otp', [MembershipApplicationController::class, 'sendOtp'])
     ->name('membership.send-otp')
     ->middleware('throttle:6,1'); // limit: 6 requests per minute
+/*
+|--------------------------------------------------------------------------
+| Arkiv
+|--------------------------------------------------------------------------
+*/
+
+   
+
+Route::get('/arkiv', [PageController::class, 'arkivIndex'])->name('arkiv.index');
+Route::get('/arkiv/{archive:slug}', [PageController::class, 'arkivShow'])->name('arkiv.show');

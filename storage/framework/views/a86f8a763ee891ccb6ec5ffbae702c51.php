@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 
-  {{-- ====== Print-safe sizing & base styles ====== --}}
+  
   <style>
   /* Container */
   .page-wrap {
@@ -105,28 +105,28 @@
 </head>
 <body>
 
-@php
+<?php
   // Define logo paths ONCE so both branches can use them
   $leftLogo  = asset('images/ikus-left.png');
   $rightLogo = asset('images/ikus-right.png');
-@endphp
+?>
 
-{{-- ===== Toolbar (screen only) ===== --}}
-@if (!($showForm ?? false))
+
+<?php if(!($showForm ?? false)): ?>
   <div class="no-print print-toolbar">
     <button type="button" class="btn" onclick="window.print()">🖨️ Skriv ut</button>
   </div>
-@endif
+<?php endif; ?>
 
-@if (!empty($showForm))
-  {{-- ==================== FORM (GET) ==================== --}}
+<?php if(!empty($showForm)): ?>
+  
   <div class="container">
     
     <div class="paper">
      <center> <h1  style="color: #5C5797;">ANSÖKAN OM MEDLEMSKAP<br>
        I Haninge Islamiska Forum</h1></center>
 <br><br><br>
-{{-- Info box at top of the form --}}
+
 <div class="alert alert-info" role="alert">
   <h5 class="mb-2">Så här fyller du i formuläret</h5>
   <ol class="mb-2">
@@ -140,13 +140,13 @@
   </ol>
 </div>
 
-      <form method="POST" action="{{ route('membership.store') }}" enctype="multipart/form-data" class="mb-4">
-        @csrf
+      <form method="POST" action="<?php echo e(route('membership.store')); ?>" enctype="multipart/form-data" class="mb-4">
+        <?php echo csrf_field(); ?>
         
 <div class="row g-3">
   <div class="col-md-6">
     <label class="form-label">Personnummer *</label>
-    <input type="text" name="Personnummer" class="form-control" required value="{{ old('Personnummer') }}">
+    <input type="text" name="Personnummer" class="form-control" required value="<?php echo e(old('Personnummer')); ?>">
   </div>
 </div>
         <div class="row g-3">
@@ -167,15 +167,7 @@
             <input type="text" name="address" class="form-control">
           </div>
         </div>
-{{-- 
 
-      <div class="mt-3">
-          <label class="form-label">Anteckningar</label>
-          <textarea name="notes" rows="3" class="form-control"></textarea>
-        </div>
-
-        <hr class="my-4">
- --}}
         <div class="mb-2">
          <br><br>
           <label class="form-label"> Underskrift *</label>
@@ -190,7 +182,7 @@
             <button type="button" id="sigClear" class="btn btn-sm btn-secondary">Rensa</button>
           </div>
         </div>
-{{-- زر إرسال رمز التحقق --}}
+
 <div class="mt-2">
    <label class="form-label"> Klicka på knappen nedan för att få koden:</label>
 <div class="mt-3 d-flex gap-2">
@@ -199,11 +191,18 @@
     <span id="otpStatus" class="text-muted small"></span>
 </div>
 
-{{-- خانة إدخال الرمز --}}
+
 <div class="mt-3 col-md-4">
     <label class="form-label">Verifieringskod (OTP)</label>
     <input type="text" name="otp_code" class="form-control" inputmode="numeric" pattern="\d{6}" placeholder="******">
-    @error('otp_code') <div class="text-danger small">{{ $message }}</div> @enderror
+    <?php $__errorArgs = ['otp_code'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="text-danger small"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
 </div>
 <br>
         <button class="btn btn-primary">Skicka in</button>
@@ -264,12 +263,12 @@
   })();
   </script>
 
-@else
-  {{-- ==================== PRINT / VIEW (POST) ==================== --}}
+<?php else: ?>
+  
   <div class="containerp">
     <div class="paper">
 
-      {{-- Top information block in two fixed columns --}}
+      
       <div class="intro-2col">
         <div>
           <p style="color:#F1B300;" ><b>KORT INFORMATION OM SKRIFTLIGT MEDGIVANDE</b></p>
@@ -291,14 +290,14 @@
         </div>
       </div>
 
-      {{-- Logos + centered title --}}
+      
       <div class="brandband">
-        <img class="brand" src="{{ $leftLogo }}"  alt="IKUS vänster">
+        <img class="brand" src="<?php echo e($leftLogo); ?>"  alt="IKUS vänster">
         <div class="brandband__title">
           ANSÖKAN OM MEDLEMSKAP I Haninge Islamiska Forum
           <small>MEDGIVANDE FÖR MOSKÉAVGIFT TILL IKUS</small>
         </div>
-        <img class="brand" src="{{ $rightLogo }}" alt="IKUS höger">
+        <img class="brand" src="<?php echo e($rightLogo); ?>" alt="IKUS höger">
       </div>
 
       <div style="height:6mm"></div>
@@ -317,33 +316,34 @@
       <div style="margin-bottom:8mm;">
         <div class="kv">
   <div class="k"><b>Personnummer:</b></div>
-  <div class="v">{{ $Personnummer ?? '' }}</div>
+  <div class="v"><?php echo e($Personnummer ?? ''); ?></div>
 </div>
 <br>
 
-        <div class="kv"><div class="k"><b>Namn/Efternamn:</b></div><div class="v">{{ $full_name ?? '' }}</div></div><br>
-        <div class="kv"><div class="k"><b>Adress:</b></div><div class="v">{{ $address ?? '' }}</div></div><br>
-        <div class="kv"><div class="k"><b>Telefon:</b></div><div class="v">{{ $phone ?? '' }}</div></div><br>
-        <div class="kv"><div class="k"><b>E-post:</b></div><div class="v">{{ $email ?? '' }}</div></div><br>
-        <div class="kv"><div class="k"><b>Datum:</b></div><div class="v">{{ $submitted_at ?? now()->format('Y-m-d H:i') }}</div></div>
+        <div class="kv"><div class="k"><b>Namn/Efternamn:</b></div><div class="v"><?php echo e($full_name ?? ''); ?></div></div><br>
+        <div class="kv"><div class="k"><b>Adress:</b></div><div class="v"><?php echo e($address ?? ''); ?></div></div><br>
+        <div class="kv"><div class="k"><b>Telefon:</b></div><div class="v"><?php echo e($phone ?? ''); ?></div></div><br>
+        <div class="kv"><div class="k"><b>E-post:</b></div><div class="v"><?php echo e($email ?? ''); ?></div></div><br>
+        <div class="kv"><div class="k"><b>Datum:</b></div><div class="v"><?php echo e($submitted_at ?? now()->format('Y-m-d H:i')); ?></div></div>
       </div>
 
-      @if(!empty($notes))
+      <?php if(!empty($notes)): ?>
         <h5>Anteckningar</h5>
-        <div style="margin-bottom:8mm;">{!! nl2br(e($notes)) !!}</div>
-      @endif
+        <div style="margin-bottom:8mm;"><?php echo nl2br(e($notes)); ?></div>
+      <?php endif; ?>
 
       <h3 class="signature-title">Underskrift</h3>
       <div class="signature-box">
-        @if ($signature_base64)
-          <img src="{{ $signature_base64 }}" alt="Signatur">
-        @elseif (!empty($signature_text))
+        <?php if($signature_base64): ?>
+          <img src="<?php echo e($signature_base64); ?>" alt="Signatur">
+        <?php elseif(!empty($signature_text)): ?>
           <div style="font-size:22px; font-style:italic; padding:6px 0;">
-            {{ $signature_text }}
+            <?php echo e($signature_text); ?>
+
           </div>
-        @else
+        <?php else: ?>
           <div style="opacity:.7;">Ingen signatur angavs</div>
-        @endif
+        <?php endif; ?>
       </div>
 
       <div style="height:10mm"></div>
@@ -362,12 +362,12 @@
       <div style="height:6mm"></div>
 
       <div class="text-center" style="font-size:12px; color:#666;">
-        © {{ date('Y') }} Haninge Islamiska Forum — Denna sida kan skrivas ut eller sparas som PDF.
+        © <?php echo e(date('Y')); ?> Haninge Islamiska Forum — Denna sida kan skrivas ut eller sparas som PDF.
       </div>
 
     </div>
   </div>
-@endif
+<?php endif; ?>
 
 
 <script>
@@ -380,9 +380,9 @@ document.getElementById('sendOtpBtn')?.addEventListener('click', async () => {
 
   try {
     status.textContent = 'Det skikas...';
-    const res = await fetch('{{ route("membership.send-otp") }}', {
+    const res = await fetch('<?php echo e(route("membership.send-otp")); ?>', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>' },
       body: JSON.stringify({ email, full_name: name })
     });
     const data = await res.json();
@@ -414,11 +414,11 @@ document.getElementById('sendOtpBtn')?.addEventListener('click', async () => {
     sendBtn.textContent = 'Skickar...';
 
     try {
-      const res = await fetch("{{ route('membership.send-otp') }}", {
+      const res = await fetch("<?php echo e(route('membership.send-otp')); ?>", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-TOKEN": "{{ csrf_token() }}"
+          "X-CSRF-TOKEN": "<?php echo e(csrf_token()); ?>"
         },
         body: JSON.stringify({ email })
       });
@@ -505,3 +505,4 @@ document.getElementById('sendOtpBtn')?.addEventListener('click', async () => {
 
 </body>
 </html>
+<?php /**PATH C:\Users\Admin\haninge\resources\views/pdf/membership.blade.php ENDPATH**/ ?>
